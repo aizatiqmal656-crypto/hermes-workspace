@@ -71,13 +71,13 @@ function deriveAgentRows(agents: AgentHubLayoutProps['agents'], sessions: Gatewa
 
   if (recent.length === 0) {
     return [
-      { id: 'placeholder-1', name: 'Nova', modelId: 'auto', status: 'idle' as const, lastLine: 'Waiting for first mission…', taskCount: 0, roleDescription: 'Worker' },
-      { id: 'placeholder-2', name: 'Pixel', modelId: 'auto', status: 'idle' as const, lastLine: 'Standing by…', taskCount: 0, roleDescription: 'Worker' },
-      { id: 'placeholder-3', name: 'Blaze', modelId: 'auto', status: 'idle' as const, lastLine: 'Ready to build.', taskCount: 0, roleDescription: 'Worker' },
+      { id: 'placeholder-1', name: 'TrendHunter', modelId: 'auto', status: 'idle' as const, lastLine: 'Scanning for trends…', taskCount: 0, roleDescription: 'Trend Scout' },
+      { id: 'placeholder-2', name: 'CopywriterAgent', modelId: 'auto', status: 'idle' as const, lastLine: 'Ready to write.', taskCount: 0, roleDescription: 'Copywriter' },
+      { id: 'placeholder-3', name: 'ContentBoss', modelId: 'auto', status: 'idle' as const, lastLine: 'Awaiting the brief.', taskCount: 0, roleDescription: 'Content Manager' },
     ]
   }
 
-  const NAMES = ['Nova', 'Pixel', 'Blaze', 'Echo', 'Sage', 'Drift']
+  const NAMES = ['TrendHunter', 'CopywriterAgent', 'ComplianceAgent', 'PromptEngineerAgent', 'AnalyticsAgent', 'ImageGeneratorAgent']
   return recent.map((session, i) => {
     const updatedAt = readTimestamp(session.updatedAt)
     const statusText = `${readText(session.status)} ${readText(session.kind)}`.toLowerCase()

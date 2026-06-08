@@ -96,8 +96,8 @@ const QUICK_ACTIONS: Array<{
   },
 ]
 
-const AGENT_NAMES = ['Nova', 'Pixel', 'Blaze', 'Echo', 'Sage', 'Drift', 'Flux', 'Volt']
-const AGENT_EMOJIS = ['🤖', '⚡', '🔥', '🌊', '🌿', '💫', '🔮', '⭐']
+const AGENT_NAMES = ['TrendHunter', 'CopywriterAgent', 'ComplianceAgent', 'PromptEngineerAgent', 'AnalyticsAgent', 'ImageGeneratorAgent', 'VideoGeneratorAgent', 'ContentBoss']
+const AGENT_EMOJIS = ['🔥', '✍️', '🛡️', '⚡', '📊', '🎨', '🎬', '👑']
 const BLENDED_COST_PER_MILLION_TOKENS = 5
 const CONDUCTOR_GOAL_DRAFT_STORAGE_KEY = 'conductor:goal-draft'
 
@@ -927,7 +927,7 @@ export function Conductor() {
       })),
     [selectedHistoryEntry],
   )
-  const OFFICE_NAMES = ['Nova', 'Pixel', 'Blaze', 'Echo', 'Sage', 'Drift']
+  const OFFICE_NAMES = ['TrendHunter', 'CopywriterAgent', 'ComplianceAgent', 'PromptEngineerAgent', 'AnalyticsAgent', 'ImageGeneratorAgent']
   const homeOfficeRows = useMemo<AgentWorkingRow[]>(() => {
     const sessions = conductor.recentSessions
     if (sessions.length === 0) {
@@ -986,9 +986,9 @@ export function Conductor() {
     return [
       {
         id: 'conductor-placeholder-agent',
-        name: 'Nova',
+        name: 'ContentBoss',
         modelId: conductor.conductorSettings.workerModel || 'auto',
-        roleDescription: 'Waiting for workers',
+        roleDescription: 'Content Manager',
         status: 'spawning',
         lastLine: conductor.goal || 'Preparing the office…',
         taskCount: 0,

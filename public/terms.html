@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms of Service — HermesTikTok</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080f09;
+      --surface:   #0d1a0f;
+      --border:    rgba(0, 255, 65, 0.18);
+      --accent:    #00ff41;
+      --accent-dim:#7cff9b;
+      --text:      #d8ffe3;
+      --muted:     rgba(216, 255, 227, 0.55);
+      --danger:    #ff5f6d;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      padding: 20px 0;
+    }
+
+    header .inner {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-mark {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #000;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .logo-text span { color: var(--accent); }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.15s;
+    }
+
+    nav a:hover, nav a.active { color: var(--accent); }
+    nav { display: flex; gap: 20px; }
+
+    main {
+      max-width: 800px;
+      margin: 48px auto;
+      padding: 0 24px 80px;
+    }
+
+    .page-header { margin-bottom: 40px; }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 10px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-size: clamp(26px, 4vw, 36px);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 32px 0;
+    }
+
+    section { margin-bottom: 36px; }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-dim);
+      margin-bottom: 12px;
+      padding-left: 12px;
+      border-left: 3px solid var(--accent);
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 18px 0 8px;
+    }
+
+    p { color: var(--muted); margin-bottom: 12px; font-size: 15px; }
+
+    ul, ol {
+      color: var(--muted);
+      font-size: 15px;
+      padding-left: 22px;
+      margin-bottom: 12px;
+    }
+
+    li { margin-bottom: 6px; }
+
+    a { color: var(--accent-dim); text-decoration: none; }
+    a:hover { color: var(--accent); text-decoration: underline; }
+
+    .highlight-box {
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      background: rgba(0, 255, 65, 0.04);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 16px 0;
+    }
+
+    .highlight-box p { margin-bottom: 0; }
+
+    .warning-box {
+      border: 1px solid rgba(255, 95, 109, 0.3);
+      border-left: 3px solid var(--danger);
+      background: rgba(255, 95, 109, 0.05);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 16px 0;
+    }
+
+    .warning-box p { color: rgba(255, 200, 200, 0.75); margin-bottom: 0; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 24px;
+      text-align: center;
+    }
+
+    footer p { font-size: 13px; color: var(--muted); margin: 0; }
+    footer nav { justify-content: center; margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="inner">
+      <a class="logo" href="/">
+        <div class="logo-mark">H</div>
+        <span class="logo-text">Hermes<span>TikTok</span></span>
+      </a>
+      <nav>
+        <a href="terms.html" class="active">Terms of Service</a>
+        <a href="privacy.html">Privacy Policy</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-header">
+      <div class="badge">Legal</div>
+      <h1>Terms of Service</h1>
+      <p class="meta">Last updated: June 8, 2026 &nbsp;·&nbsp; Effective date: June 8, 2026</p>
+    </div>
+
+    <div class="highlight-box">
+      <p>Please read these Terms carefully before using HermesTikTok. By accessing or using the service you agree to be bound by these Terms. If you disagree with any part, do not use the service.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 1 -->
+    <section>
+      <h2>1. Definitions</h2>
+      <p><strong>"Service"</strong> refers to the HermesTikTok application, including its AI-powered pipeline for TikTok content creation — trend research, script generation, image generation, voice synthesis, and video production.</p>
+      <p><strong>"User," "you," "your"</strong> refers to the individual or entity accessing the Service.</p>
+      <p><strong>"We," "us," "our"</strong> refers to the operator of HermesTikTok.</p>
+      <p><strong>"Content"</strong> refers to any output produced by the Service, including scripts, images, audio, and video.</p>
+    </section>
+
+    <!-- 2 -->
+    <section>
+      <h2>2. Acceptance of Terms</h2>
+      <p>By using HermesTikTok, you confirm that you are at least 18 years old (or the legal age of majority in your jurisdiction), have the legal authority to enter into this agreement, and agree to comply with all applicable laws and regulations.</p>
+    </section>
+
+    <!-- 3 -->
+    <section>
+      <h2>3. Description of Service</h2>
+      <p>HermesTikTok is an AI-powered content creation pipeline that automates the production of TikTok-style marketing content. The Service integrates with third-party AI providers including:</p>
+      <ul>
+        <li><strong>Anthropic Claude</strong> — orchestration, script writing, and compliance checking</li>
+        <li><strong>fal.ai</strong> — image generation (Flux) and video generation (Kling)</li>
+        <li><strong>ElevenLabs</strong> — text-to-speech voice synthesis</li>
+        <li><strong>ffmpeg.wasm</strong> — in-browser audio/video merging</li>
+      </ul>
+      <p>Generated content is subject to the terms, policies, and content guidelines of each respective provider.</p>
+    </section>
+
+    <!-- 4 -->
+    <section>
+      <h2>4. User Responsibilities</h2>
+      <h3>4.1 Acceptable Use</h3>
+      <p>You agree to use the Service only for lawful purposes. You must not:</p>
+      <ul>
+        <li>Generate content that violates TikTok's Community Guidelines or Terms of Service</li>
+        <li>Create deceptive, misleading, or fraudulent content</li>
+        <li>Generate content that infringes any third-party intellectual property rights</li>
+        <li>Produce content that is defamatory, harassing, or harmful to individuals</li>
+        <li>Use the Service to generate spam or unsolicited promotional content at scale</li>
+        <li>Attempt to circumvent or abuse API rate limits or quotas</li>
+      </ul>
+
+      <h3>4.2 API Keys and Credentials</h3>
+      <p>You are responsible for all activity conducted through your API keys (including those for fal.ai, ElevenLabs, and Anthropic). Keep your credentials confidential. We are not liable for costs or damages arising from unauthorised use of your credentials.</p>
+
+      <h3>4.3 Content Accuracy</h3>
+      <p>AI-generated content may contain inaccuracies, errors, or fabrications ("hallucinations"). You are solely responsible for reviewing, verifying, and approving all content before publication. Do not publish content that makes false claims about products, pricing, or health benefits without independent verification.</p>
+    </section>
+
+    <!-- 5 -->
+    <section>
+      <h2>5. Intellectual Property</h2>
+      <h3>5.1 Your Content</h3>
+      <p>You retain ownership of any original materials you provide as inputs (e.g., product descriptions, brand assets). You grant us a limited, non-exclusive licence to process your inputs solely to provide the Service.</p>
+
+      <h3>5.2 Generated Output</h3>
+      <p>Ownership of AI-generated outputs is governed by the terms of the underlying AI providers. We make no warranties regarding the intellectual property status of generated content. You are responsible for ensuring your use of generated content complies with applicable law and third-party terms.</p>
+
+      <h3>5.3 Our Intellectual Property</h3>
+      <p>All software, interfaces, trademarks, and documentation associated with HermesTikTok remain our exclusive property. You may not copy, modify, distribute, or reverse-engineer any part of the Service without express written permission.</p>
+    </section>
+
+    <!-- 6 -->
+    <section>
+      <h2>6. Third-Party Services</h2>
+      <p>The Service relies on third-party APIs. Your use of those services is governed by their respective terms:</p>
+      <ul>
+        <li><a href="https://www.anthropic.com/legal/usage-policy" target="_blank" rel="noopener">Anthropic Usage Policy</a></li>
+        <li><a href="https://fal.ai/terms" target="_blank" rel="noopener">fal.ai Terms of Service</a></li>
+        <li><a href="https://elevenlabs.io/terms" target="_blank" rel="noopener">ElevenLabs Terms of Service</a></li>
+        <li><a href="https://www.tiktok.com/legal/terms-of-service" target="_blank" rel="noopener">TikTok Terms of Service</a></li>
+      </ul>
+      <p>We are not responsible for the availability, accuracy, or legality of content produced by third-party AI models.</p>
+    </section>
+
+    <!-- 7 -->
+    <section>
+      <h2>7. Disclaimers</h2>
+      <div class="warning-box">
+        <p>THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, ERROR-FREE, OR THAT GENERATED CONTENT WILL BE ACCURATE OR SUITABLE FOR ANY PARTICULAR PURPOSE.</p>
+      </div>
+      <p>Generated content, including scripts, images, voice, and video, is produced by AI systems and may not reflect current trends, pricing, or factual accuracy. You bear sole responsibility for any content you publish on TikTok or any other platform.</p>
+    </section>
+
+    <!-- 8 -->
+    <section>
+      <h2>8. Limitation of Liability</h2>
+      <p>To the fullest extent permitted by applicable law, we shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, revenue, data, or business opportunities, arising from your use of or inability to use the Service.</p>
+      <p>Our total aggregate liability for any claim arising out of or related to this agreement shall not exceed the greater of (a) USD $100 or (b) the amounts paid by you to us in the twelve months preceding the claim.</p>
+    </section>
+
+    <!-- 9 -->
+    <section>
+      <h2>9. Indemnification</h2>
+      <p>You agree to indemnify and hold harmless us and our affiliates, officers, employees, and agents from any claims, damages, losses, or expenses (including reasonable legal fees) arising out of: (i) your use of the Service; (ii) content you create, publish, or distribute using the Service; (iii) your violation of these Terms; or (iv) your violation of any applicable law or the rights of any third party.</p>
+    </section>
+
+    <!-- 10 -->
+    <section>
+      <h2>10. Modifications to the Service and Terms</h2>
+      <p>We reserve the right to modify or discontinue the Service at any time without notice. We may revise these Terms at any time. Material changes will be indicated by updating the "Last updated" date above. Continued use of the Service after changes constitutes acceptance of the revised Terms.</p>
+    </section>
+
+    <!-- 11 -->
+    <section>
+      <h2>11. Termination</h2>
+      <p>We may terminate or suspend your access to the Service immediately, without prior notice, if you breach these Terms or for any other reason at our sole discretion. Upon termination, your right to use the Service ceases immediately. Sections 5, 7, 8, 9, and 12 survive termination.</p>
+    </section>
+
+    <!-- 12 -->
+    <section>
+      <h2>12. Governing Law</h2>
+      <p>These Terms are governed by and construed in accordance with applicable laws. Any disputes shall be resolved in the courts of competent jurisdiction. If any provision of these Terms is held invalid, the remaining provisions continue in full force.</p>
+    </section>
+
+    <!-- 13 -->
+    <section>
+      <h2>13. Contact</h2>
+      <p>If you have questions or concerns about these Terms, please contact us:</p>
+      <div class="highlight-box">
+        <p>📧 <a href="mailto:aizat.iqmal656@gmail.com">aizat.iqmal656@gmail.com</a></p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>&copy; 2026 HermesTikTok. All rights reserved.</p>
+    <nav>
+      <a href="terms.html">Terms of Service</a>
+      <a href="privacy.html">Privacy Policy</a>
+    </nav>
+  </footer>
+
+</body>
+</html>

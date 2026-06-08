@@ -45,14 +45,18 @@ export const LOCATIONS = {
 } as const
 
 export const DESK_POSITIONS = [
+  // Row 1 — TrendHunter, CopywriterAgent, ComplianceAgent
   { x: 18, y: 28, deskX: 18, deskY: 18 },
   { x: 42, y: 28, deskX: 42, deskY: 18 },
   { x: 66, y: 28, deskX: 66, deskY: 18 },
+  // Row 2 — PromptEngineerAgent, AnalyticsAgent, ImageGeneratorAgent
   { x: 18, y: 55, deskX: 18, deskY: 45 },
   { x: 42, y: 55, deskX: 42, deskY: 45 },
   { x: 66, y: 55, deskX: 66, deskY: 45 },
+  // Row 3 — VideoGeneratorAgent
   { x: 30, y: 78, deskX: 30, deskY: 68 },
-  { x: 55, y: 78, deskX: 55, deskY: 68 },
+  // Corner office — ContentBoss (top-right, separated from crew)
+  { x: 83, y: 20, deskX: 83, deskY: 10 },
 ] as const
 
 export const EXPRESSION_MAP: Record<AgentActivity, Expression> = {

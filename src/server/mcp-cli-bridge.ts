@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 
 export interface CliTestResult {
   ok: boolean
@@ -16,6 +16,9 @@ const DEFAULT_TIMEOUT_MS = 60_000
 
 const HERMES_BIN_CANDIDATES = [
   process.env.HERMES_CLI_BIN,
+  // Windows: Nous installer path (AppData/Local)
+  join(homedir(), 'AppData', 'Local', 'hermes', 'hermes-agent', 'venv', 'Scripts', 'hermes.exe'),
+  // Unix: ~/.hermes install
   join(homedir(), '.hermes', 'hermes-agent', 'venv', 'bin', 'hermes'),
   join(homedir(), '.local', 'bin', 'hermes'),
   'hermes',
@@ -23,7 +26,7 @@ const HERMES_BIN_CANDIDATES = [
 
 function resolveHermesBin(): string {
   for (const candidate of HERMES_BIN_CANDIDATES) {
-    if (candidate.includes('/')) {
+    if (isAbsolute(candidate)) {
       if (existsSync(candidate)) return candidate
       continue
     }

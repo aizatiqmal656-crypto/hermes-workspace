@@ -585,6 +585,7 @@ function ChatSidebarComponent({
   const isMemoryActive = pathname === '/memory'
   const isTasksActive = pathname === '/tasks'
   const isConductorActive = pathname === '/conductor'
+  const isTikTokActive = pathname === '/tiktok'
   const isOperationsActive = pathname === '/operations'
   const isSwarmActive = pathname === '/swarm' || pathname === '/swarm2'
   const echoStudioEnabled = useSettingsStore(
@@ -833,6 +834,13 @@ function ChatSidebarComponent({
       icon: Rocket01Icon,
       label: 'Conductor',
       active: isConductorActive,
+    },
+    {
+      kind: 'link',
+      to: '/tiktok',
+      icon: Castle02Icon,
+      label: '🎬 TikTok',
+      active: isTikTokActive,
     },
     {
       kind: 'link',

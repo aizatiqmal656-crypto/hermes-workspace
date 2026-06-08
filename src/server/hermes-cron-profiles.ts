@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { basename, join } from 'node:path'
+import { basename, isAbsolute, join } from 'node:path'
 import { getHermesRoot, getProfilesDir } from './claude-paths'
 
 const PROFILE_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
@@ -9,6 +9,9 @@ const JOB_ID_RE = /^[A-Fa-f0-9]{8,64}$/
 
 const HERMES_BIN_CANDIDATES = [
   process.env.HERMES_CLI_BIN,
+  // Windows: Nous installer path (AppData/Local)
+  join(homedir(), 'AppData', 'Local', 'hermes', 'hermes-agent', 'venv', 'Scripts', 'hermes.exe'),
+  // Unix: ~/.hermes install
   join(homedir(), '.hermes', 'hermes-agent', 'venv', 'bin', 'hermes'),
   join(homedir(), '.local', 'bin', 'hermes'),
   'hermes',
@@ -16,7 +19,7 @@ const HERMES_BIN_CANDIDATES = [
 
 function resolveHermesBin(): string {
   for (const candidate of HERMES_BIN_CANDIDATES) {
-    if (candidate.includes('/')) {
+    if (isAbsolute(candidate)) {
       if (existsSync(candidate)) return candidate
       continue
     }

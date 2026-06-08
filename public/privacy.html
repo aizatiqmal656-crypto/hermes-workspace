@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — HermesTikTok</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080f09;
+      --surface:   #0d1a0f;
+      --border:    rgba(0, 255, 65, 0.18);
+      --accent:    #00ff41;
+      --accent-dim:#7cff9b;
+      --text:      #d8ffe3;
+      --muted:     rgba(216, 255, 227, 0.55);
+      --danger:    #ff5f6d;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      padding: 20px 0;
+    }
+
+    header .inner {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-mark {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #000;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .logo-text span { color: var(--accent); }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.15s;
+    }
+
+    nav a:hover, nav a.active { color: var(--accent); }
+    nav { display: flex; gap: 20px; }
+
+    main {
+      max-width: 800px;
+      margin: 48px auto;
+      padding: 0 24px 80px;
+    }
+
+    .page-header { margin-bottom: 40px; }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 3px 10px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-size: clamp(26px, 4vw, 36px);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .meta { font-size: 13px; color: var(--muted); }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 32px 0;
+    }
+
+    section { margin-bottom: 36px; }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-dim);
+      margin-bottom: 12px;
+      padding-left: 12px;
+      border-left: 3px solid var(--accent);
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 18px 0 8px;
+    }
+
+    p { color: var(--muted); margin-bottom: 12px; font-size: 15px; }
+
+    ul, ol {
+      color: var(--muted);
+      font-size: 15px;
+      padding-left: 22px;
+      margin-bottom: 12px;
+    }
+
+    li { margin-bottom: 6px; }
+
+    a { color: var(--accent-dim); text-decoration: none; }
+    a:hover { color: var(--accent); text-decoration: underline; }
+
+    .highlight-box {
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      background: rgba(0, 255, 65, 0.04);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 16px 0;
+    }
+
+    .highlight-box p { margin-bottom: 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      background: rgba(0, 255, 65, 0.06);
+      color: var(--accent-dim);
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 10px 14px;
+      color: var(--muted);
+      border-bottom: 1px solid rgba(0, 255, 65, 0.07);
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 24px;
+      text-align: center;
+    }
+
+    footer p { font-size: 13px; color: var(--muted); margin: 0; }
+    footer nav { justify-content: center; margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="inner">
+      <a class="logo" href="/">
+        <div class="logo-mark">H</div>
+        <span class="logo-text">Hermes<span>TikTok</span></span>
+      </a>
+      <nav>
+        <a href="terms.html">Terms of Service</a>
+        <a href="privacy.html" class="active">Privacy Policy</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="page-header">
+      <div class="badge">Legal</div>
+      <h1>Privacy Policy</h1>
+      <p class="meta">Last updated: June 8, 2026 &nbsp;·&nbsp; Effective date: June 8, 2026</p>
+    </div>
+
+    <div class="highlight-box">
+      <p>HermesTikTok is designed with privacy in mind. This policy explains what data we collect, how we use it, and the choices you have. We do not sell your personal data.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 1 -->
+    <section>
+      <h2>1. Who We Are</h2>
+      <p>HermesTikTok is an AI-powered TikTok content creation tool. References to "we," "us," or "our" mean the operator of this application. For data-related enquiries, contact us at <a href="mailto:aizat.iqmal656@gmail.com">aizat.iqmal656@gmail.com</a>.</p>
+    </section>
+
+    <!-- 2 -->
+    <section>
+      <h2>2. Information We Collect</h2>
+
+      <h3>2.1 Information You Provide</h3>
+      <ul>
+        <li><strong>API Keys:</strong> You enter your own API keys for fal.ai, ElevenLabs, and Anthropic. These are stored locally in your browser's environment configuration and are never transmitted to our servers.</li>
+        <li><strong>Content Inputs:</strong> Product names, descriptions, and other text you enter to run the pipeline.</li>
+      </ul>
+
+      <h3>2.2 Automatically Collected Information</h3>
+      <ul>
+        <li><strong>Local Storage:</strong> The app stores the last fal.ai request ID in your browser's <code>localStorage</code> to enable video retrieval. This data stays on your device.</li>
+        <li><strong>Browser State:</strong> In-memory pipeline results (scripts, image URLs, audio blobs, video URLs) exist only during your session and are cleared on page reload.</li>
+      </ul>
+
+      <h3>2.3 Information We Do Not Collect</h3>
+      <ul>
+        <li>We do not collect names, email addresses, or account information</li>
+        <li>We do not run analytics, tracking pixels, or telemetry</li>
+        <li>We do not place third-party advertising cookies</li>
+        <li>We do not log API calls you make to third-party services</li>
+      </ul>
+    </section>
+
+    <!-- 3 -->
+    <section>
+      <h2>3. How We Use Information</h2>
+      <p>The limited information processed by the Service is used solely to:</p>
+      <ul>
+        <li>Execute your content pipeline requests (trend research, script generation, image/video/voice creation)</li>
+        <li>Display results within the application interface</li>
+        <li>Recover a previously submitted video generation job (via the stored request ID)</li>
+      </ul>
+      <p>We do not use your content or inputs to train AI models.</p>
+    </section>
+
+    <!-- 4 -->
+    <section>
+      <h2>4. Third-Party Data Processing</h2>
+      <p>When you run the pipeline, your inputs are sent to third-party AI providers. Each provider has its own privacy policy:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Provider</th>
+            <th>Purpose</th>
+            <th>Privacy Policy</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Anthropic</strong></td>
+            <td>AI orchestration, script generation, compliance review</td>
+            <td><a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener">anthropic.com/legal/privacy</a></td>
+          </tr>
+          <tr>
+            <td><strong>fal.ai</strong></td>
+            <td>Image generation (Flux), video generation (Kling)</td>
+            <td><a href="https://fal.ai/privacy" target="_blank" rel="noopener">fal.ai/privacy</a></td>
+          </tr>
+          <tr>
+            <td><strong>ElevenLabs</strong></td>
+            <td>Text-to-speech voice synthesis</td>
+            <td><a href="https://elevenlabs.io/privacy" target="_blank" rel="noopener">elevenlabs.io/privacy</a></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>Your inputs (product descriptions, scripts, image URLs) are transmitted to these providers when you trigger the corresponding features. We recommend reviewing each provider's data retention and training policies.</p>
+    </section>
+
+    <!-- 5 -->
+    <section>
+      <h2>5. Cookies and Local Storage</h2>
+      <p>HermesTikTok does not set tracking cookies. We use browser <code>localStorage</code> only for functional purposes:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Purpose</th>
+            <th>Expires</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>fal_kling_last_request_id</code></td>
+            <td>Stores the most recent Kling video request ID to enable recovery after a browser reload</td>
+            <td>Until you clear it or click ✕ in the UI</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>You can clear this data at any time by clicking the ✕ button next to "Retrieve Last Video" in the app, or by clearing your browser's local storage.</p>
+    </section>
+
+    <!-- 6 -->
+    <section>
+      <h2>6. Data Security</h2>
+      <p>Because HermesTikTok processes API calls directly from your browser to third-party providers:</p>
+      <ul>
+        <li>Your API keys are stored only in your local environment configuration (the <code>.env</code> file on your machine) — they are never stored on our servers</li>
+        <li>All API calls use HTTPS/TLS encryption in transit</li>
+        <li>Generated media (images, audio, video) is held in browser memory and released when you close the tab</li>
+        <li>No generated content is stored or logged on our infrastructure</li>
+      </ul>
+      <p>Despite these measures, no method of data transmission is 100% secure. Use the Service at your own risk.</p>
+    </section>
+
+    <!-- 7 -->
+    <section>
+      <h2>7. Data Retention</h2>
+      <p>We retain no personal data on our servers because we collect none. Data processing happens:</p>
+      <ul>
+        <li><strong>In your browser (in-memory):</strong> pipeline results, generated images, audio blobs, video URLs — cleared on page close</li>
+        <li><strong>In your browser (localStorage):</strong> the last fal.ai request ID — persists until you delete it</li>
+        <li><strong>At third-party providers:</strong> governed by each provider's retention policy</li>
+      </ul>
+    </section>
+
+    <!-- 8 -->
+    <section>
+      <h2>8. Children's Privacy</h2>
+      <p>HermesTikTok is not directed at individuals under 18 years of age. We do not knowingly collect personal information from children. If you believe a child has provided information through the Service, please contact us and we will take appropriate action.</p>
+    </section>
+
+    <!-- 9 -->
+    <section>
+      <h2>9. Your Rights</h2>
+      <p>Depending on your location, you may have the right to:</p>
+      <ul>
+        <li>Access, correct, or delete personal data we hold about you</li>
+        <li>Object to or restrict processing of your data</li>
+        <li>Data portability</li>
+        <li>Lodge a complaint with a supervisory authority</li>
+      </ul>
+      <p>Since we collect no personal data on our servers, most of these rights are satisfied automatically. For data held by third-party providers, please exercise your rights directly with those providers using the links in Section 4.</p>
+    </section>
+
+    <!-- 10 -->
+    <section>
+      <h2>10. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. We will notify you of material changes by updating the "Last updated" date at the top of this page. Your continued use of the Service after changes constitutes acceptance of the updated policy.</p>
+    </section>
+
+    <!-- 11 -->
+    <section>
+      <h2>11. Contact Us</h2>
+      <p>If you have questions, concerns, or requests relating to this Privacy Policy, please contact us:</p>
+      <div class="highlight-box">
+        <p>📧 <a href="mailto:aizat.iqmal656@gmail.com">aizat.iqmal656@gmail.com</a></p>
+      </div>
+      <p>We aim to respond to all enquiries within 30 days.</p>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>&copy; 2026 HermesTikTok. All rights reserved.</p>
+    <nav>
+      <a href="terms.html">Terms of Service</a>
+      <a href="privacy.html">Privacy Policy</a>
+    </nav>
+  </footer>
+
+</body>
+</html>

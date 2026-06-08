@@ -424,9 +424,13 @@ function agentRepoPath(): string | null {
 
 export function readAgentUpdateStatus(): ProductUpdateStatus {
   const repoPath = agentRepoPath()
-  const repoHermes = repoPath ? join(repoPath, 'venv', 'bin', 'hermes') : null
+  const repoHermesWin = repoPath ? join(repoPath, 'venv', 'Scripts', 'hermes.exe') : null
+  const repoHermesUnix = repoPath ? join(repoPath, 'venv', 'bin', 'hermes') : null
+  const repoHermes = repoHermesWin && existsSync(repoHermesWin) ? repoHermesWin
+    : repoHermesUnix && existsSync(repoHermesUnix) ? repoHermesUnix
+    : null
   const path =
-    repoHermes && existsSync(repoHermes) ? repoHermes : exec('which', ['hermes'])
+    repoHermes ? repoHermes : exec('which', ['hermes'])
   const version =
     (path ? exec(path, ['--version'], { timeout: 10_000 }) : null)?.split(
       '\n',

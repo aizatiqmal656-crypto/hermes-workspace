@@ -171,8 +171,8 @@ export type MissionHistoryEntry = {
 const HISTORY_STORAGE_KEY = 'conductor:history'
 const MAX_HISTORY_ENTRIES = 50
 
-const AGENT_NAMES = ['Nova', 'Pixel', 'Blaze', 'Echo', 'Sage', 'Drift', 'Flux', 'Volt']
-const AGENT_EMOJIS = ['🤖', '⚡', '🔥', '🌊', '🌿', '💫', '🔮', '⭐']
+const AGENT_NAMES = ['TrendHunter', 'CopywriterAgent', 'ComplianceAgent', 'PromptEngineerAgent', 'AnalyticsAgent', 'ImageGeneratorAgent', 'VideoGeneratorAgent', 'ContentBoss']
+const AGENT_EMOJIS = ['🔥', '✍️', '🛡️', '⚡', '📊', '🎨', '🎬', '👑']
 
 function getAgentPersona(index: number) {
   return {
@@ -1055,7 +1055,7 @@ export function useConductorGateway() {
       const checkpoint = assignment.checkpoint
       const isComplete = state === 'checkpointed' || state === 'done' || state === 'cancelled'
       const isBlocked = state === 'blocked' || state === 'needs_input'
-      const personaNames = ['Nova', 'Pixel', 'Blaze', 'Echo', 'Sage', 'Drift', 'Flux', 'Volt']
+      const personaNames = ['TrendHunter', 'CopywriterAgent', 'ComplianceAgent', 'PromptEngineerAgent', 'AnalyticsAgent', 'ImageGeneratorAgent', 'VideoGeneratorAgent', 'ContentBoss']
       const persona = personaNames[index % personaNames.length]
       return {
         key: workerId,

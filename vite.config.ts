@@ -52,6 +52,9 @@ function resolveClaudeAgentDir(env: Record<string, string>): string | null {
 function resolveClaudeBinary(): string | null {
   const candidates = [
     process.env.HERMES_CLI_BIN || '',
+    // Windows: Nous installer path (AppData/Local)
+    resolve(os.homedir(), 'AppData', 'Local', 'hermes', 'hermes-agent', 'venv', 'Scripts', 'hermes.exe'),
+    // Unix: ~/.hermes install
     resolve(os.homedir(), '.hermes', 'hermes-agent', 'venv', 'bin', 'hermes'),
     resolve(os.homedir(), '.claude', 'bin', 'claude'),
     resolve(os.homedir(), '.local', 'bin', 'claude'),

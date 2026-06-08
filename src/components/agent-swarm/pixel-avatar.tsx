@@ -20,14 +20,14 @@ type PixelAvatarProps = {
 /** Color mappings per persona role */
 export const PERSONA_COLORS: Record<string, { body: string; accent: string }> =
   {
-    Roger: { body: '#3b82f6', accent: '#93c5fd' },
-    Sally: { body: '#a855f7', accent: '#d8b4fe' },
-    Bill: { body: '#f97316', accent: '#fdba74' },
-    Ada: { body: '#10b981', accent: '#6ee7b7' },
-    Max: { body: '#f59e0b', accent: '#fcd34d' },
-    Luna: { body: '#06b6d4', accent: '#67e8f9' },
-    Kai: { body: '#eab308', accent: '#fde047' },
-    Nova: { body: '#ef4444', accent: '#fca5a5' },
+    TrendHunter: { body: '#ff0050', accent: '#ff6b9d' },          // TikTok red-pink
+    CopywriterAgent: { body: '#7c3aed', accent: '#c4b5fd' },      // Violet
+    ComplianceAgent: { body: '#0d9488', accent: '#5eead4' },      // Teal
+    PromptEngineerAgent: { body: '#ca8a04', accent: '#fde047' },  // Yellow-gold
+    AnalyticsAgent: { body: '#2563eb', accent: '#93c5fd' },       // Blue
+    ImageGeneratorAgent: { body: '#9333ea', accent: '#e879f9' },  // Fuchsia-purple
+    VideoGeneratorAgent: { body: '#00c2b8', accent: '#67e8f9' },  // TikTok cyan
+    ContentBoss: { body: '#f59e0b', accent: '#fcd34d' },          // Gold (manager)
   }
 
 function Eyes({ expression = 'neutral' }: { expression?: Expression }) {
