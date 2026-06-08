@@ -30,6 +30,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ── Sync pnpm-lock.yaml before Docker copies it into the image ──────────
+      # The Dockerfile runs `pnpm install --frozen-lockfile`, which fails if
+      # package.json was updated without a matching lockfile commit (e.g. after
+      # adding a new dependency locally). Running pnpm install here regenerates
+      # the lockfile in the Docker build context so the image build never sees
+      # a mismatch.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Sync lockfile
+        run: pnpm install --no-frozen-lockfile
+      # ─────────────────────────────────────────────────────────────────────────
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 

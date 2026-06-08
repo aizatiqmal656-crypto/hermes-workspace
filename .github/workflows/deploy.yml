@@ -53,11 +53,13 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build
-        # --base sets the public path so all asset URLs resolve correctly
-        # under the /hermes-workspace/ sub-path that GitHub Pages serves.
-        run: pnpm exec vite build --base /hermes-workspace/
+        # Pass --base through pnpm's script layer (the -- separator forwards
+        # extra args to the underlying `vite build` command).
+        run: pnpm run build -- --base=/hermes-workspace/
         env:
           NODE_ENV: production
+          # Prevent OOM kills on large Vite/SSR builds in GitHub's 7 GB runners
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Verify dist
         run: |
@@ -72,7 +74,7 @@ jobs:
         run: cp dist/index.html dist/404.html
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: dist
 
