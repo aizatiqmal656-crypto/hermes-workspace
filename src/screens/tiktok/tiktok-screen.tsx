@@ -22,6 +22,28 @@ interface Script {
   cta: string
 }
 
+interface Scene {
+  sceneNumber: number
+  angle: string
+  action: string
+  image_prompt: string
+  voiceover_text: string
+}
+
+interface SceneImageState {
+  url: string | null
+  generating: boolean
+  error: string | null
+}
+
+interface SceneVideoState {
+  url: string | null
+  generating: boolean
+  error: string | null
+  progress: string
+  requestId: string | null
+}
+
 // ---------------------------------------------------------------------------
 // Agent pipeline sequence
 // ---------------------------------------------------------------------------
@@ -34,7 +56,6 @@ const PIPELINE_AGENTS = [
   { name: 'AnalyticsAgent', role: 'Analytics Specialist', emoji: '📊', color: '#2563eb', ms: 2000 },
 ]
 
-// Demo output data — shown once pipeline completes
 const DEMO_PRODUCT: Product = {
   name: 'AeroGlow LED Face Mask',
   price: '$49.99',
@@ -48,6 +69,56 @@ const DEMO_SCRIPT: Script = {
   body: "Red light therapy used to cost $200/session at spas. This AeroGlow mask brings clinical-grade LED tech home. 20 minutes, 3× a week — users are reporting clearer skin in just 2 weeks. The collagen boost is real. Over 50k sold this month alone.",
   cta: "Comment \"GLOW\" and I'll DM you the link 🔗 Save this before it sells out again",
 }
+
+const DEMO_STORYBOARD: Scene[] = [
+  {
+    sceneNumber: 1,
+    angle: 'Wide Shot',
+    action: 'Person at home scrolling phone, shocked by expensive spa prices on screen',
+    image_prompt: 'Young woman sitting on a cozy modern sofa holding a phone showing expensive spa prices, dramatic shocked expression, warm ambient living room lighting, shallow depth of field, photorealistic, vertical 9:16 composition',
+    voiceover_text: 'Pernahkah anda terkejut bila tengok harga rawatan spa yang mencecah ratusan ringgit?',
+  },
+  {
+    sceneNumber: 2,
+    angle: 'Close Up',
+    action: 'AeroGlow LED Face Mask glowing softly on a clean white surface, hero product shot',
+    image_prompt: 'AeroGlow LED face mask product hero shot glowing with warm red and amber light, minimalist white marble background, dramatic studio lighting with soft shadows, premium beauty product photography, photorealistic',
+    voiceover_text: 'Tapi kini ada penyelesaian yang lebih berpatutan — mask LED AeroGlow yang canggih.',
+  },
+  {
+    sceneNumber: 3,
+    angle: 'POV',
+    action: 'POV shot of hands placing the LED mask on face, looking into bathroom mirror',
+    image_prompt: 'First-person POV perspective of hands gently placing a glowing red LED face mask, reflection visible in a clean modern bathroom mirror, warm white vanity lighting, satisfying symmetrical composition, photorealistic',
+    voiceover_text: 'Teknologi terapi cahaya merah yang sama seperti di klinik kini boleh anda guna di rumah.',
+  },
+  {
+    sceneNumber: 4,
+    angle: 'Medium Shot',
+    action: 'Person relaxing on sofa wearing the glowing mask, peaceful and content expression',
+    image_prompt: 'Person sitting comfortably on a modern white sofa wearing a glowing red LED face mask, calm relaxed posture, cozy living room with warm evening lighting, lifestyle photography aesthetic, soft bokeh background, photorealistic',
+    voiceover_text: 'Hanya 20 minit, tiga kali seminggu — dan kulit anda akan berubah dalam masa dua minggu sahaja!',
+  },
+  {
+    sceneNumber: 5,
+    angle: 'Extreme Close Up',
+    action: 'Extreme macro close up of radiant glowing skin after treatment',
+    image_prompt: 'Extreme close up macro shot of beautiful radiant glowing healthy skin, luminous complexion with natural highlight, dewey texture, soft professional beauty lighting, high-end skincare campaign photography, photorealistic',
+    voiceover_text: 'Lebih 50,000 pelanggan sudah membuktikan — kolagen meningkat dan kulit semakin cerah dan bersinar!',
+  },
+  {
+    sceneNumber: 6,
+    angle: 'Top Down',
+    action: 'Top-down flat lay of the product with premium packaging, price tag, and CTA overlay',
+    image_prompt: 'Top-down flat lay of AeroGlow LED face mask with elegant premium packaging box on white background, $49.99 price tag visible, clean minimalist product photography, e-commerce style with soft shadows, photorealistic',
+    voiceover_text: 'Komen "GLOW" sekarang dan saya akan DM link terus kepada anda — jangan lepaskan peluang ini!',
+  },
+]
+
+const EMPTY_SCENE_IMAGE = (): SceneImageState => ({ url: null, generating: false, error: null })
+const EMPTY_SCENE_VIDEO = (): SceneVideoState => ({
+  url: null, generating: false, error: null, progress: '', requestId: null,
+})
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -64,14 +135,8 @@ function SectionCard({
 }) {
   return (
     <div
-      className={cn(
-        'rounded-xl border p-5 flex flex-col gap-4',
-        className,
-      )}
-      style={{
-        background: 'var(--theme-card)',
-        borderColor: 'var(--theme-border)',
-      }}
+      className={cn('rounded-xl border p-5 flex flex-col gap-4', className)}
+      style={{ background: 'var(--theme-card)', borderColor: 'var(--theme-border)' }}
     >
       <h2
         className="text-xs font-semibold uppercase tracking-widest"
@@ -160,7 +225,7 @@ function AgentPill({
       <div className="flex flex-col">
         <span
           className="text-xs font-medium leading-tight"
-          style={{ color: active ? color : done ? 'var(--theme-muted)' : 'var(--theme-muted)' }}
+          style={{ color: active ? color : 'var(--theme-muted)' }}
         >
           {name}
         </span>
@@ -185,11 +250,57 @@ function AgentPill({
   )
 }
 
+interface TrackerStep {
+  label: string
+  done: boolean
+  active: boolean
+}
+
+function StepTracker({ steps }: { steps: TrackerStep[] }) {
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {steps.map((step, i) => (
+        <span key={step.label} className="flex items-center gap-1">
+          <motion.div
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium select-none"
+            style={{
+              background: step.done
+                ? 'rgba(34,197,94,0.15)'
+                : step.active
+                  ? 'rgba(245,158,11,0.15)'
+                  : 'var(--theme-border)',
+              border: `1px solid ${
+                step.done
+                  ? 'rgba(34,197,94,0.4)'
+                  : step.active
+                    ? 'rgba(245,158,11,0.4)'
+                    : 'transparent'
+              }`,
+              color: step.done ? '#22c55e' : step.active ? '#f59e0b' : 'var(--theme-muted)',
+            }}
+            animate={step.active ? { opacity: [0.7, 1, 0.7] } : {}}
+            transition={{ duration: 1.2, repeat: step.active ? Infinity : 0 }}
+          >
+            <span>{step.done ? '✓' : step.active ? '◉' : '○'}</span>
+            {step.label}
+          </motion.div>
+          {i < steps.length - 1 && (
+            <span className="text-[10px]" style={{ color: 'var(--theme-muted)' }}>
+              →
+            </span>
+          )}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Main screen
 // ---------------------------------------------------------------------------
 
 export function TikTokScreen() {
+  // ── Agent pipeline ──
   const [status, setStatus] = useState<PipelineStatus>('idle')
   const [activeAgentIdx, setActiveAgentIdx] = useState<number>(-1)
   const [doneUpTo, setDoneUpTo] = useState<number>(-1)
@@ -198,33 +309,48 @@ export function TikTokScreen() {
   const [product, setProduct] = useState<Product | null>(null)
   const [script, setScript] = useState<Script | null>(null)
 
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [imageGenerating, setImageGenerating] = useState(false)
-  const [imageError, setImageError] = useState<string | null>(null)
+  // ── Storyboard ──
+  const [storyboard, setStoryboard] = useState<Scene[] | null>(null)
+  const [storyboardGenerating, setStoryboardGenerating] = useState(false)
+  const [storyboardError, setStoryboardError] = useState<string | null>(null)
 
-  const [videoUrl, setVideoUrl] = useState<string | null>(null)
-  const [videoGenerating, setVideoGenerating] = useState(false)
-  const [videoError, setVideoError] = useState<string | null>(null)
-  const [videoProgress, setVideoProgress] = useState('')
-  const [retrieving, setRetrieving] = useState(false)
-  // Initialise from localStorage so the retrieve button is available on page reload
-  const [lastRequestId, setLastRequestId] = useState<string | null>(
-    () => localStorage.getItem('fal_kling_last_request_id'),
+  // ── Scene images (6 slots) ──
+  const [sceneImages, setSceneImages] = useState<SceneImageState[]>(
+    () => Array.from({ length: 6 }, EMPTY_SCENE_IMAGE),
   )
 
-  // Voice (ElevenLabs TTS)
+  // ── Scene videos (6 slots) ──
+  const [sceneVideos, setSceneVideos] = useState<SceneVideoState[]>(
+    () => Array.from({ length: 6 }, EMPTY_SCENE_VIDEO),
+  )
+
+  // ── Clip merge ──
+  const [mergedClipsUrl, setMergedClipsUrl] = useState<string | null>(null)
+  const [mergingClips, setMergingClips] = useState(false)
+  const [mergeClipsProgress, setMergeClipsProgress] = useState('')
+  const [mergeClipsError, setMergeClipsError] = useState<string | null>(null)
+
+  // ── Voice (ElevenLabs TTS) ──
   const [voiceUrl, setVoiceUrl] = useState<string | null>(null)
   const [voiceGenerating, setVoiceGenerating] = useState(false)
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const voiceBytesRef = useRef<Uint8Array | null>(null)
 
-  // Merge (ffmpeg.wasm)
+  // ── Final merge (voice + clips) via ffmpeg.wasm ──
   const [merging, setMerging] = useState(false)
   const [mergeProgress, setMergeProgress] = useState('')
   const [mergedVideoUrl, setMergedVideoUrl] = useState<string | null>(null)
   const [mergeError, setMergeError] = useState<string | null>(null)
-  // Singleton FFmpeg instance — loaded once, reused
   const ffmpegRef = useRef<FFmpeg | null>(null)
+
+  // ── Immutable state helpers ──
+  const updateSceneImage = useCallback((idx: number, update: Partial<SceneImageState>) => {
+    setSceneImages((prev) => prev.map((s, i) => (i === idx ? { ...s, ...update } : s)))
+  }, [])
+
+  const updateSceneVideo = useCallback((idx: number, update: Partial<SceneVideoState>) => {
+    setSceneVideos((prev) => prev.map((s, i) => (i === idx ? { ...s, ...update } : s)))
+  }, [])
 
   // -------------------------------------------------------------------------
   // Pipeline runner
@@ -238,8 +364,18 @@ export function TikTokScreen() {
     setScript(null)
     setSessionKey(null)
     setPipelineError(null)
+    setStoryboard(null)
+    setStoryboardError(null)
+    setSceneImages(Array.from({ length: 6 }, EMPTY_SCENE_IMAGE))
+    setSceneVideos(Array.from({ length: 6 }, EMPTY_SCENE_VIDEO))
+    setMergedClipsUrl(null)
+    setMergeClipsError(null)
+    setVoiceUrl(null)
+    setVoiceError(null)
+    voiceBytesRef.current = null
+    setMergedVideoUrl(null)
+    setMergeError(null)
 
-    // Spawn conductor mission
     try {
       const res = await fetch('/api/conductor-spawn', {
         method: 'POST',
@@ -260,13 +396,11 @@ export function TikTokScreen() {
       })
 
       const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
-
       if (!res.ok) {
         throw new Error(
           typeof data.error === 'string' ? data.error : `HTTP ${res.status}`,
         )
       }
-
       const key =
         (data.sessionKey as string | undefined) ||
         (data.session_key as string | undefined) ||
@@ -274,11 +408,9 @@ export function TikTokScreen() {
         null
       setSessionKey(key)
     } catch (err) {
-      // Conductor spawn failed — still run the visual simulation for demo
       console.warn('[TikTok Pipeline] conductor-spawn failed:', err)
     }
 
-    // Animate through agents with realistic timing
     for (let i = 0; i < PIPELINE_AGENTS.length; i++) {
       setActiveAgentIdx(i)
       await new Promise<void>((r) => setTimeout(r, PIPELINE_AGENTS[i].ms))
@@ -292,76 +424,313 @@ export function TikTokScreen() {
   }, [])
 
   // -------------------------------------------------------------------------
-  // Image generation via fal.ai flux/schnell
+  // Storyboard generation via /api/generate-storyboard (server → Claude API)
   // -------------------------------------------------------------------------
 
-  const generateImage = useCallback(async () => {
-    const falKey = import.meta.env.VITE_FAL_API_KEY as string | undefined
-    if (!falKey) {
-      setImageError('VITE_FAL_API_KEY is not set in .env — add it to enable image generation')
-      return
-    }
+  const generateStoryboard = useCallback(async () => {
+    if (!script || !product) return
 
-    setImageGenerating(true)
-    setImageError(null)
-    setImageUrl(null)
-
-    const prompt = product
-      ? `Product photography for TikTok: ${product.name}. Professional studio shot, clean white background, vibrant lifestyle lighting, trending aesthetic, social media ready, 4k sharp`
-      : 'Trending viral product, professional TikTok photography, clean studio shot, social media ready'
+    setStoryboardGenerating(true)
+    setStoryboardError(null)
+    setStoryboard(null)
+    setSceneImages(Array.from({ length: 6 }, EMPTY_SCENE_IMAGE))
+    setSceneVideos(Array.from({ length: 6 }, EMPTY_SCENE_VIDEO))
+    setMergedClipsUrl(null)
 
     try {
-      const res = await fetch('https://fal.run/fal-ai/flux/schnell', {
+      const res = await fetch('/api/generate-storyboard', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Key ${falKey}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt,
-          image_size: 'square_hd',
-          num_inference_steps: 4,
-          num_images: 1,
-          enable_safety_checker: true,
+          productName: product.name,
+          price: product.price,
+          hook: script.hook,
+          bodyText: script.body,
+          cta: script.cta,
         }),
       })
 
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as Record<string, unknown>
-        throw new Error(
-          typeof err.detail === 'string'
-            ? err.detail
-            : typeof err.error === 'string'
-              ? err.error
-              : `HTTP ${res.status}`,
-        )
+      const data = (await res.json().catch(() => ({}))) as { scenes?: Scene[]; error?: string }
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error ?? `HTTP ${res.status}`)
       }
 
-      const data = (await res.json()) as {
-        images?: Array<{ url: string }>
-      }
-      const url = data.images?.[0]?.url
-      if (!url) throw new Error('No image in response')
-      setImageUrl(url)
+      const scenes = (data.scenes ?? []) as Scene[]
+      if (scenes.length === 0) throw new Error('No scenes returned')
+      // Pad to 6 with demo data if API returned fewer
+      const padded: Scene[] = Array.from({ length: 6 }, (_, i) => scenes[i] ?? DEMO_STORYBOARD[i])
+      setStoryboard(padded)
     } catch (err) {
-      setImageError(err instanceof Error ? err.message : 'Image generation failed')
+      // Fall back to demo storyboard on error so user can still explore the UI
+      setStoryboard(DEMO_STORYBOARD)
+      setStoryboardError(
+        `${err instanceof Error ? err.message : 'Storyboard generation failed'} — loaded demo storyboard`,
+      )
     } finally {
-      setImageGenerating(false)
+      setStoryboardGenerating(false)
     }
-  }, [product])
+  }, [script, product])
 
   // -------------------------------------------------------------------------
-  // Voice generation via ElevenLabs TTS
+  // Scene image generation via fal.ai Flux Dev
+  // -------------------------------------------------------------------------
+
+  const generateSingleSceneImage = useCallback(
+    async (idx: number, prompt: string) => {
+      const falKey = import.meta.env.VITE_FAL_API_KEY as string | undefined
+      if (!falKey) {
+        updateSceneImage(idx, { error: 'VITE_FAL_API_KEY not set', generating: false })
+        return
+      }
+
+      updateSceneImage(idx, { generating: true, error: null, url: null })
+
+      try {
+        const res = await fetch('https://fal.run/fal-ai/flux/dev', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Key ${falKey}`,
+          },
+          body: JSON.stringify({
+            prompt,
+            image_size: 'portrait_4_3',
+            num_inference_steps: 28,
+            num_images: 1,
+            enable_safety_checker: true,
+          }),
+        })
+
+        if (!res.ok) {
+          const err = (await res.json().catch(() => ({}))) as Record<string, unknown>
+          throw new Error(
+            typeof err.detail === 'string'
+              ? err.detail
+              : typeof err.error === 'string'
+                ? err.error
+                : `HTTP ${res.status}`,
+          )
+        }
+
+        const data = (await res.json()) as { images?: Array<{ url: string }> }
+        const url = data.images?.[0]?.url
+        if (!url) throw new Error('No image URL in response')
+        updateSceneImage(idx, { url, generating: false, error: null })
+      } catch (err) {
+        updateSceneImage(idx, {
+          generating: false,
+          error: err instanceof Error ? err.message : 'Image generation failed',
+        })
+      }
+    },
+    [updateSceneImage],
+  )
+
+  const generateAllSceneImages = useCallback(async () => {
+    if (!storyboard) return
+    await Promise.all(
+      storyboard.map((scene, idx) => generateSingleSceneImage(idx, scene.image_prompt)),
+    )
+  }, [storyboard, generateSingleSceneImage])
+
+  // -------------------------------------------------------------------------
+  // Scene video generation via fal.ai Kling v1.6 Pro (queue API)
+  // -------------------------------------------------------------------------
+
+  const generateSingleSceneVideo = useCallback(
+    async (idx: number, imageUrl: string, scenePrompt: string) => {
+      const falKey = import.meta.env.VITE_FAL_API_KEY as string | undefined
+      if (!falKey) {
+        updateSceneVideo(idx, { error: 'VITE_FAL_API_KEY not set', generating: false })
+        return
+      }
+
+      updateSceneVideo(idx, { generating: true, error: null, url: null, progress: 'Submitting…' })
+
+      const MODEL = 'fal-ai/kling-video/v1.6/pro/image-to-video'
+      const QUEUE_BASE = `https://queue.fal.run/${MODEL}`
+
+      try {
+        const submitRes = await fetch(QUEUE_BASE, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Key ${falKey}`,
+          },
+          body: JSON.stringify({
+            image_url: imageUrl,
+            prompt: scenePrompt,
+            duration: '5',
+            aspect_ratio: '9:16',
+          }),
+        })
+
+        if (!submitRes.ok) {
+          const err = (await submitRes.json().catch(() => ({}))) as Record<string, unknown>
+          throw new Error(
+            typeof err.detail === 'string'
+              ? err.detail
+              : typeof err.error === 'string'
+                ? err.error
+                : `HTTP ${submitRes.status}`,
+          )
+        }
+
+        const { request_id: requestId } = (await submitRes.json()) as { request_id: string }
+        updateSceneVideo(idx, { requestId, progress: 'In queue…' })
+
+        const statusUrl = `${QUEUE_BASE}/requests/${requestId}/status`
+        const resultUrl = `${QUEUE_BASE}/requests/${requestId}`
+        const MAX_POLLS = 120
+
+        for (let i = 0; i < MAX_POLLS; i++) {
+          await new Promise<void>((r) => setTimeout(r, 5000))
+
+          const statusRes = await fetch(statusUrl, {
+            headers: { Authorization: `Key ${falKey}` },
+          })
+          if (!statusRes.ok) continue
+
+          const { status: jobStatus } = (await statusRes.json()) as { status: string }
+          const elapsed = (i + 1) * 5
+          const mins = Math.floor(elapsed / 60)
+          const secs = elapsed % 60
+
+          if (jobStatus === 'IN_QUEUE') {
+            updateSceneVideo(idx, { progress: `In queue… (${elapsed}s)` })
+          } else if (jobStatus === 'IN_PROGRESS') {
+            updateSceneVideo(idx, {
+              progress: `Generating… ${mins > 0 ? `${mins}m ${secs}s` : `${secs}s`}`,
+            })
+          } else if (jobStatus === 'COMPLETED') {
+            const resultRes = await fetch(resultUrl, {
+              headers: { Authorization: `Key ${falKey}` },
+            })
+            if (!resultRes.ok) throw new Error(`Result fetch failed: HTTP ${resultRes.status}`)
+
+            const result = (await resultRes.json()) as {
+              video?: { url: string }
+              outputs?: Array<{ url: string }>
+            }
+            const url = result.video?.url ?? result.outputs?.[0]?.url
+            if (!url) throw new Error('No video URL in result')
+
+            updateSceneVideo(idx, { url, generating: false, progress: '', error: null })
+            return
+          } else if (jobStatus === 'FAILED') {
+            throw new Error('Video generation failed on server')
+          }
+        }
+
+        throw new Error('Timed out after 10 minutes')
+      } catch (err) {
+        updateSceneVideo(idx, {
+          generating: false,
+          progress: '',
+          error: err instanceof Error ? err.message : 'Video generation failed',
+        })
+      }
+    },
+    [updateSceneVideo],
+  )
+
+  const generateAllSceneVideos = useCallback(async () => {
+    if (!storyboard) return
+    // Submit all 6 to the queue simultaneously — each polls independently
+    await Promise.all(
+      storyboard.map((scene, idx) => {
+        const imgUrl = sceneImages[idx]?.url
+        if (!imgUrl) return Promise.resolve()
+        return generateSingleSceneVideo(idx, imgUrl, scene.action)
+      }),
+    )
+  }, [storyboard, sceneImages, generateSingleSceneVideo])
+
+  // -------------------------------------------------------------------------
+  // Merge all 6 scene clips via ffmpeg.wasm concat demuxer
+  // -------------------------------------------------------------------------
+
+  const mergeAllClips = useCallback(async () => {
+    const videoUrls = sceneVideos.map((v) => v.url).filter((u): u is string => u !== null)
+    if (videoUrls.length === 0) {
+      setMergeClipsError('No scene videos available to merge')
+      return
+    }
+
+    setMergingClips(true)
+    setMergeClipsError(null)
+    if (mergedClipsUrl) URL.revokeObjectURL(mergedClipsUrl)
+    setMergedClipsUrl(null)
+    setMergeClipsProgress('Loading ffmpeg.wasm…')
+
+    try {
+      const { FFmpeg } = await import('@ffmpeg/ffmpeg')
+      const { fetchFile, toBlobURL } = await import('@ffmpeg/util')
+
+      if (!ffmpegRef.current) {
+        const ff = new FFmpeg()
+        ff.on('log', ({ message }) => {
+          if (/time=|frame=/.test(message)) {
+            setMergeClipsProgress(`Encoding… ${message.replace(/\s+/g, ' ').trim()}`)
+          }
+        })
+        setMergeClipsProgress('Downloading ffmpeg core (~30 MB, first time only)…')
+        const BASE = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
+        await ff.load({
+          coreURL: await toBlobURL(`${BASE}/ffmpeg-core.js`, 'text/javascript'),
+          wasmURL: await toBlobURL(`${BASE}/ffmpeg-core.wasm`, 'application/wasm'),
+        })
+        ffmpegRef.current = ff
+      }
+
+      const ff = ffmpegRef.current
+
+      let concatContent = ''
+      for (let i = 0; i < videoUrls.length; i++) {
+        setMergeClipsProgress(`Writing clip ${i + 1}/${videoUrls.length}…`)
+        await ff.writeFile(`clip${i}.mp4`, await fetchFile(videoUrls[i]))
+        concatContent += `file 'clip${i}.mp4'\n`
+      }
+
+      await ff.writeFile('concat.txt', new TextEncoder().encode(concatContent))
+      setMergeClipsProgress(`Concatenating ${videoUrls.length} clips…`)
+
+      await ff.exec([
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', 'concat.txt',
+        '-c', 'copy',
+        'merged_clips.mp4',
+      ])
+
+      const data = await ff.readFile('merged_clips.mp4')
+      setMergedClipsUrl(
+        URL.createObjectURL(new Blob([data as Uint8Array], { type: 'video/mp4' })),
+      )
+      setMergeClipsProgress('')
+
+      for (let i = 0; i < videoUrls.length; i++) {
+        await ff.deleteFile(`clip${i}.mp4`).catch(() => {})
+      }
+      await ff.deleteFile('concat.txt').catch(() => {})
+      await ff.deleteFile('merged_clips.mp4').catch(() => {})
+    } catch (err) {
+      setMergeClipsError(err instanceof Error ? err.message : 'Merge failed')
+      setMergeClipsProgress('')
+    } finally {
+      setMergingClips(false)
+    }
+  }, [sceneVideos, mergedClipsUrl])
+
+  // -------------------------------------------------------------------------
+  // Voice generation via ElevenLabs TTS — uses storyboard voiceover texts
   // -------------------------------------------------------------------------
 
   const generateVoice = useCallback(async () => {
     const key = import.meta.env.VITE_ELEVENLABS_API_KEY as string | undefined
     if (!key) {
       setVoiceError('VITE_ELEVENLABS_API_KEY is not set in .env — add your ElevenLabs API key')
-      return
-    }
-    if (!script) {
-      setVoiceError('Run the pipeline first to generate a script')
       return
     }
 
@@ -371,11 +740,18 @@ export function TikTokScreen() {
     setVoiceUrl(null)
     voiceBytesRef.current = null
 
-    // Full script narration: hook → body → cta
-    const text = [script.hook, script.body, script.cta]
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim()
+    // Use storyboard voiceover texts when available, otherwise fall back to script
+    const text = storyboard
+      ? storyboard.map((s) => s.voiceover_text).join(' ').replace(/\s+/g, ' ').trim()
+      : script
+        ? [script.hook, script.body, script.cta].join(' ').replace(/\s+/g, ' ').trim()
+        : ''
+
+    if (!text) {
+      setVoiceError('No text to generate voice from — run the pipeline first')
+      setVoiceGenerating(false)
+      return
+    }
 
     try {
       const res = await fetch(
@@ -398,8 +774,10 @@ export function TikTokScreen() {
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as Record<string, unknown>
         throw new Error(
-          typeof err.detail === 'string' ? err.detail
-            : typeof err.message === 'string' ? err.message
+          typeof err.detail === 'string'
+            ? err.detail
+            : typeof err.message === 'string'
+              ? err.message
               : `HTTP ${res.status}`,
         )
       }
@@ -412,195 +790,14 @@ export function TikTokScreen() {
     } finally {
       setVoiceGenerating(false)
     }
-  }, [script, voiceUrl])
+  }, [storyboard, script, voiceUrl])
 
   // -------------------------------------------------------------------------
-  // Video generation via fal.ai Kling v1.6 Pro (image-to-video, queue API)
+  // Final merge: voice + merged clips via ffmpeg.wasm
   // -------------------------------------------------------------------------
 
-  const generateVideo = useCallback(async () => {
-    const falKey = import.meta.env.VITE_FAL_API_KEY as string | undefined
-    if (!falKey) {
-      setVideoError('VITE_FAL_API_KEY is not set in .env — add it to enable video generation')
-      return
-    }
-    if (!imageUrl) {
-      setVideoError('Generate an image first before creating a video')
-      return
-    }
-
-    setVideoGenerating(true)
-    setVideoError(null)
-    setVideoUrl(null)
-    setVideoProgress('Submitting to queue…')
-
-    const prompt = product
-      ? `${product.name} product showcase, smooth cinematic camera movement, vibrant colors, professional TikTok style video`
-      : 'Product showcase, smooth cinematic camera movement, vibrant TikTok style'
-
-    const MODEL = 'fal-ai/kling-video/v1.6/pro/image-to-video'
-    const QUEUE_BASE = `https://queue.fal.run/${MODEL}`
-
-    try {
-      // 1. Submit job to the fal.ai queue
-      const submitRes = await fetch(QUEUE_BASE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Key ${falKey}`,
-        },
-        body: JSON.stringify({
-          image_url: imageUrl,
-          prompt,
-          duration: '5',
-          aspect_ratio: '9:16',
-        }),
-      })
-
-      if (!submitRes.ok) {
-        const err = (await submitRes.json().catch(() => ({}))) as Record<string, unknown>
-        throw new Error(
-          typeof err.detail === 'string' ? err.detail
-            : typeof err.error === 'string' ? err.error
-              : `HTTP ${submitRes.status}`,
-        )
-      }
-
-      const { request_id: requestId } = (await submitRes.json()) as { request_id: string }
-      // Persist so "Retrieve Last Video" can recover it after a UI timeout
-      localStorage.setItem('fal_kling_last_request_id', requestId)
-      setLastRequestId(requestId)
-      setVideoProgress('In queue…')
-
-      // 2. Poll status every 5 seconds (up to 10 minutes)
-      const statusUrl = `${QUEUE_BASE}/requests/${requestId}/status`
-      const resultUrl = `${QUEUE_BASE}/requests/${requestId}`
-      const MAX_POLLS = 120
-
-      for (let i = 0; i < MAX_POLLS; i++) {
-        await new Promise<void>((r) => setTimeout(r, 5000))
-
-        const statusRes = await fetch(statusUrl, {
-          headers: { Authorization: `Key ${falKey}` },
-        })
-
-        if (!statusRes.ok) continue
-
-        const { status } = (await statusRes.json()) as { status: string }
-        const elapsed = (i + 1) * 5
-        const mins = Math.floor(elapsed / 60)
-        const secs = elapsed % 60
-
-        if (status === 'IN_QUEUE') {
-          setVideoProgress(`In queue… (${elapsed}s elapsed)`)
-        } else if (status === 'IN_PROGRESS') {
-          setVideoProgress(
-            `Generating video… ${mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} elapsed`,
-          )
-        } else if (status === 'COMPLETED') {
-          // 3. Fetch the finished result
-          const resultRes = await fetch(resultUrl, {
-            headers: { Authorization: `Key ${falKey}` },
-          })
-          if (!resultRes.ok) throw new Error(`Failed to fetch result: HTTP ${resultRes.status}`)
-
-          const result = (await resultRes.json()) as {
-            video?: { url: string }
-            outputs?: Array<{ url: string }>
-          }
-          const url = result.video?.url ?? result.outputs?.[0]?.url
-          if (!url) throw new Error('No video URL in response')
-
-          setVideoUrl(url)
-          setVideoProgress('')
-          return
-        } else if (status === 'FAILED') {
-          throw new Error('Video generation failed on the server — try again')
-        }
-      }
-
-      throw new Error('Timed out after 10 minutes — use "Retrieve Last Video" to recover it once it finishes')
-    } catch (err) {
-      setVideoError(err instanceof Error ? err.message : 'Video generation failed')
-      setVideoProgress('')
-    } finally {
-      setVideoGenerating(false)
-    }
-  }, [imageUrl, product])
-
-  // -------------------------------------------------------------------------
-  // Retrieve the most recently submitted Kling request from fal.ai
-  // -------------------------------------------------------------------------
-
-  const retrieveLastVideo = useCallback(async () => {
-    const falKey = import.meta.env.VITE_FAL_API_KEY as string | undefined
-    if (!falKey) {
-      setVideoError('VITE_FAL_API_KEY is not set in .env')
-      return
-    }
-    const requestId = lastRequestId ?? localStorage.getItem('fal_kling_last_request_id')
-    if (!requestId) {
-      setVideoError('No previous Kling request found — run a generation first')
-      return
-    }
-
-    setRetrieving(true)
-    setVideoError(null)
-    setVideoProgress(`Checking request …${requestId.slice(-8)}`)
-
-    const MODEL = 'fal-ai/kling-video/v1.6/pro/image-to-video'
-    const QUEUE_BASE = `https://queue.fal.run/${MODEL}`
-    const statusUrl = `${QUEUE_BASE}/requests/${requestId}/status`
-    const resultUrl = `${QUEUE_BASE}/requests/${requestId}`
-
-    try {
-      const statusRes = await fetch(statusUrl, {
-        headers: { Authorization: `Key ${falKey}` },
-      })
-      if (!statusRes.ok) throw new Error(`Status check failed: HTTP ${statusRes.status}`)
-
-      const { status } = (await statusRes.json()) as { status: string }
-
-      if (status === 'COMPLETED') {
-        const resultRes = await fetch(resultUrl, {
-          headers: { Authorization: `Key ${falKey}` },
-        })
-        if (!resultRes.ok) throw new Error(`Result fetch failed: HTTP ${resultRes.status}`)
-
-        const result = (await resultRes.json()) as {
-          video?: { url: string }
-          outputs?: Array<{ url: string }>
-        }
-        const url = result.video?.url ?? result.outputs?.[0]?.url
-        if (!url) throw new Error('Request completed but contained no video URL')
-
-        setVideoUrl(url)
-        setVideoProgress('')
-      } else if (status === 'IN_QUEUE' || status === 'IN_PROGRESS') {
-        setVideoError(
-          `Request is still ${status === 'IN_QUEUE' ? 'in queue' : 'processing'} — wait a moment and try again`,
-        )
-      } else if (status === 'FAILED') {
-        localStorage.removeItem('fal_kling_last_request_id')
-        setLastRequestId(null)
-        throw new Error('Last request failed on the server — generate a new video')
-      } else {
-        throw new Error(`Unexpected status: ${status}`)
-      }
-    } catch (err) {
-      setVideoError(err instanceof Error ? err.message : 'Retrieve failed')
-    } finally {
-      setRetrieving(false)
-      setVideoProgress('')
-    }
-  }, [lastRequestId])
-
-  // -------------------------------------------------------------------------
-  // Merge audio + video via ffmpeg.wasm (runs entirely in the browser)
-  // -------------------------------------------------------------------------
-
-  const mergeAudioVideo = useCallback(async () => {
-    if (!videoUrl || !voiceBytesRef.current) return
+  const mergeFinalVideo = useCallback(async () => {
+    if (!mergedClipsUrl || !voiceBytesRef.current) return
 
     setMerging(true)
     setMergeError(null)
@@ -609,14 +806,12 @@ export function TikTokScreen() {
     setMergeProgress('Loading ffmpeg.wasm…')
 
     try {
-      // Dynamic import so the ~30 MB WASM is only fetched when needed
       const { FFmpeg } = await import('@ffmpeg/ffmpeg')
       const { fetchFile, toBlobURL } = await import('@ffmpeg/util')
 
       if (!ffmpegRef.current) {
         const ff = new FFmpeg()
         ff.on('log', ({ message }) => {
-          // Surface encode progress lines (contain "time=" or "frame=")
           if (/time=|frame=/.test(message)) {
             setMergeProgress(`Encoding… ${message.replace(/\s+/g, ' ').trim()}`)
           }
@@ -632,27 +827,28 @@ export function TikTokScreen() {
 
       const ff = ffmpegRef.current
       setMergeProgress('Writing source files…')
-      await ff.writeFile('video.mp4', await fetchFile(videoUrl))
+      await ff.writeFile('video.mp4', await fetchFile(mergedClipsUrl))
       await ff.writeFile('audio.mp3', voiceBytesRef.current)
 
       setMergeProgress('Merging video + audio…')
       await ff.exec([
         '-i', 'video.mp4',
         '-i', 'audio.mp3',
-        '-c:v', 'copy',   // copy video stream — no re-encode
-        '-c:a', 'aac',    // transcode MP3 → AAC for MP4 container
+        '-c:v', 'copy',
+        '-c:a', 'aac',
         '-b:a', '192k',
         '-map', '0:v:0',
         '-map', '1:a:0',
-        '-shortest',      // trim to the shorter of the two (video ~5 s)
+        '-shortest',
         'output.mp4',
       ])
 
       const data = await ff.readFile('output.mp4')
-      setMergedVideoUrl(URL.createObjectURL(new Blob([data as Uint8Array], { type: 'video/mp4' })))
+      setMergedVideoUrl(
+        URL.createObjectURL(new Blob([data as Uint8Array], { type: 'video/mp4' })),
+      )
       setMergeProgress('')
 
-      // Clean up tmp files for next run
       await ff.deleteFile('video.mp4').catch(() => {})
       await ff.deleteFile('audio.mp3').catch(() => {})
       await ff.deleteFile('output.mp4').catch(() => {})
@@ -662,10 +858,55 @@ export function TikTokScreen() {
     } finally {
       setMerging(false)
     }
-  }, [videoUrl, mergedVideoUrl])
+  }, [mergedClipsUrl, mergedVideoUrl])
+
+  // ── Derived counts ──
+  const imagesReady = sceneImages.filter((s) => s.url !== null).length
+  const videosReady = sceneVideos.filter((s) => s.url !== null).length
+  const allImagesReady = imagesReady === 6
+  const allVideosReady = videosReady === 6
 
   const isRunning = status === 'running'
   const isDone = status === 'done'
+
+  // ── Progress tracker steps ──
+  const trackerSteps: TrackerStep[] = [
+    {
+      label: 'Script',
+      done: script !== null,
+      active: isRunning && script === null,
+    },
+    {
+      label: 'Storyboard',
+      done: storyboard !== null,
+      active: storyboardGenerating,
+    },
+    {
+      label: `Images (${imagesReady}/6)`,
+      done: allImagesReady,
+      active: sceneImages.some((s) => s.generating),
+    },
+    {
+      label: `Videos (${videosReady}/6)`,
+      done: allVideosReady,
+      active: sceneVideos.some((s) => s.generating),
+    },
+    {
+      label: 'Merge',
+      done: mergedClipsUrl !== null,
+      active: mergingClips,
+    },
+    {
+      label: 'Voice',
+      done: voiceUrl !== null,
+      active: voiceGenerating,
+    },
+    {
+      label: 'Done',
+      done: mergedVideoUrl !== null,
+      active: merging,
+    },
+  ]
 
   return (
     <div
@@ -680,9 +921,16 @@ export function TikTokScreen() {
           🎬 TikTok Pipeline
         </h1>
         <p className="text-sm" style={{ color: 'var(--theme-muted)' }}>
-          Agent-powered daily content creation — trend to script to visual in one click
+          Agent-powered storyboard pipeline — script to 6-scene cinematic TikTok in one flow
         </p>
       </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Progress Tracker                                                    */}
+      {/* ------------------------------------------------------------------ */}
+      <SectionCard title="Pipeline Progress">
+        <StepTracker steps={trackerSteps} />
+      </SectionCard>
 
       {/* ------------------------------------------------------------------ */}
       {/* Row 1: Pipeline Control + Agent Status                             */}
@@ -706,9 +954,7 @@ export function TikTokScreen() {
                   : 'cursor-pointer hover:brightness-110 active:scale-95',
               )}
               style={{
-                background: isRunning
-                  ? 'var(--theme-border)'
-                  : 'var(--theme-accent)',
+                background: isRunning ? 'var(--theme-border)' : 'var(--theme-accent)',
                 color: isRunning ? 'var(--theme-muted)' : '#000',
               }}
               whileTap={isRunning ? {} : { scale: 0.97 }}
@@ -743,7 +989,7 @@ export function TikTokScreen() {
 
             {isDone && (
               <p className="text-xs" style={{ color: 'var(--theme-accent)' }}>
-                ✓ Pipeline complete — results ready below
+                ✓ Pipeline complete — generate storyboard below
               </p>
             )}
           </div>
@@ -812,11 +1058,7 @@ export function TikTokScreen() {
                 <Field label="Why It's Going Viral" value={product.viralReason} />
               </motion.div>
             ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <p className="text-sm" style={{ color: 'var(--theme-muted)' }}>
                   Run the pipeline to discover today's trending product.
                 </p>
@@ -847,14 +1089,6 @@ export function TikTokScreen() {
                       animate={{ opacity: [0.4, 0.8, 0.4] }}
                       transition={{ duration: 1.4, repeat: Infinity, delay: 0.3 }}
                     />
-                    {lbl === 'Body' && (
-                      <motion.div
-                        className="h-4 rounded mt-1"
-                        style={{ background: 'var(--theme-border)', width: '85%' }}
-                        animate={{ opacity: [0.4, 0.8, 0.4] }}
-                        transition={{ duration: 1.4, repeat: Infinity, delay: 0.5 }}
-                      />
-                    )}
                   </div>
                 ))}
               </motion.div>
@@ -865,7 +1099,6 @@ export function TikTokScreen() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-4"
               >
-                {/* Hook */}
                 <div className="flex flex-col gap-1">
                   <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
                     Hook
@@ -882,7 +1115,6 @@ export function TikTokScreen() {
                   </div>
                 </div>
 
-                {/* Body */}
                 <div className="flex flex-col gap-1">
                   <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
                     Body
@@ -892,7 +1124,6 @@ export function TikTokScreen() {
                   </p>
                 </div>
 
-                {/* CTA */}
                 <div className="flex flex-col gap-1">
                   <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
                     CTA
@@ -909,44 +1140,35 @@ export function TikTokScreen() {
                   </div>
                 </div>
 
-                {/* Copy button */}
-                <button
-                  onClick={() =>
-                    navigator.clipboard.writeText(
-                      `HOOK:\n${script.hook}\n\nBODY:\n${script.body}\n\nCTA:\n${script.cta}`,
-                    )
-                  }
-                  className="self-start text-xs rounded px-3 py-1.5 transition-all hover:brightness-110"
-                  style={{
-                    background: 'var(--theme-border)',
-                    color: 'var(--theme-muted)',
-                  }}
-                >
-                  Copy Script
-                </button>
-
-                {/* ── Voice generation ── */}
-                <div
-                  className="flex flex-col gap-3 pt-3"
-                  style={{ borderTop: '1px solid var(--theme-border)' }}
-                >
-                  <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(
+                        `HOOK:\n${script.hook}\n\nBODY:\n${script.body}\n\nCTA:\n${script.cta}`,
+                      )
+                    }
+                    className="text-xs rounded px-3 py-1.5 transition-all hover:brightness-110"
+                    style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+                  >
+                    Copy Script
+                  </button>
+                  {!storyboard && (
                     <motion.button
-                      onClick={voiceGenerating ? undefined : generateVoice}
-                      disabled={voiceGenerating}
+                      onClick={storyboardGenerating ? undefined : generateStoryboard}
+                      disabled={storyboardGenerating}
                       className={cn(
-                        'flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all',
-                        voiceGenerating
+                        'flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-semibold transition-all',
+                        storyboardGenerating
                           ? 'cursor-not-allowed opacity-60'
                           : 'cursor-pointer hover:brightness-110 active:scale-95',
                       )}
                       style={{
-                        background: voiceGenerating ? 'var(--theme-border)' : '#0d9488',
+                        background: storyboardGenerating ? 'var(--theme-border)' : '#7c3aed',
                         color: '#fff',
                       }}
-                      whileTap={voiceGenerating ? {} : { scale: 0.97 }}
+                      whileTap={storyboardGenerating ? {} : { scale: 0.97 }}
                     >
-                      {voiceGenerating ? (
+                      {storyboardGenerating ? (
                         <>
                           <motion.span
                             animate={{ rotate: 360 }}
@@ -954,63 +1176,13 @@ export function TikTokScreen() {
                           >
                             ⟳
                           </motion.span>
-                          Generating…
+                          Generating Storyboard…
                         </>
-                      ) : voiceUrl ? (
-                        <>🎙️ Regenerate Voice</>
                       ) : (
-                        <>🎙️ Generate Voice</>
+                        <>🎞️ Generate Storyboard →</>
                       )}
                     </motion.button>
-                    {!voiceGenerating && (
-                      <span className="text-[11px]" style={{ color: 'var(--theme-muted)' }}>
-                        Adam · ElevenLabs Turbo v2.5 · full script
-                      </span>
-                    )}
-                  </div>
-
-                  {voiceError && (
-                    <div
-                      className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs"
-                      style={{ color: '#ff5f6d', background: 'rgba(255,95,109,0.1)' }}
-                    >
-                      <span>{voiceError}</span>
-                      <button
-                        onClick={() => void generateVoice()}
-                        className="shrink-0 rounded px-2 py-1 font-medium hover:brightness-110"
-                        style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
-                      >
-                        Retry
-                      </button>
-                    </div>
                   )}
-
-                  <AnimatePresence>
-                    {voiceUrl && (
-                      <motion.div
-                        key="audio-player"
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="flex flex-col gap-2"
-                      >
-                        <audio
-                          src={voiceUrl}
-                          controls
-                          className="w-full rounded-lg"
-                          style={{ accentColor: 'var(--theme-accent)', maxWidth: 420 }}
-                        />
-                        <a
-                          href={voiceUrl}
-                          download="tiktok-voice.mp3"
-                          className="self-start text-[11px] rounded px-3 py-1 hover:brightness-110 transition-all"
-                          style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                        >
-                          Download MP3
-                        </a>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
               </motion.div>
             ) : (
@@ -1025,175 +1197,548 @@ export function TikTokScreen() {
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Row 3: Visual Assets                                               */}
+      {/* Storyboard                                                          */}
       {/* ------------------------------------------------------------------ */}
-      <SectionCard title="Visual Assets">
-        <div className="flex flex-col gap-6">
-
-          {/* ── Image subsection ── */}
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--theme-muted)' }}>
-                Image
-              </span>
-              <div className="flex-1 h-px" style={{ background: 'var(--theme-border)' }} />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <motion.button
-                onClick={imageGenerating ? undefined : generateImage}
-                disabled={imageGenerating}
-                className={cn(
-                  'flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all',
-                  imageGenerating
-                    ? 'cursor-not-allowed opacity-60'
-                    : 'cursor-pointer hover:brightness-110 active:scale-95',
-                )}
-                style={{
-                  background: imageGenerating ? 'var(--theme-border)' : '#9333ea',
-                  color: '#fff',
-                }}
-                whileTap={imageGenerating ? {} : { scale: 0.97 }}
-              >
-                {imageGenerating ? (
-                  <>
-                    <motion.span
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    >
-                      ⟳
-                    </motion.span>
-                    Generating…
-                  </>
-                ) : (
-                  <>🎨 Generate Image</>
-                )}
-              </motion.button>
-
-              {product && !imageGenerating && (
-                <span className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-                  "{product.name}" product shot
-                </span>
-              )}
-            </div>
-
-            {imageError && (
-              <div
-                className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs"
-                style={{ color: '#ff5f6d', background: 'rgba(255,95,109,0.1)' }}
-              >
-                <span>{imageError}</span>
-                <button
-                  onClick={generateImage}
-                  className="shrink-0 rounded px-2 py-1 font-medium hover:brightness-110 transition-all"
-                  style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-
-            <AnimatePresence>
-              {imageGenerating && !imageUrl && (
-                <motion.div
-                  key="img-placeholder"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="rounded-xl overflow-hidden flex items-center justify-center"
-                  style={{ background: 'var(--theme-border)', width: 280, height: 280 }}
-                >
-                  <motion.span
-                    className="text-3xl"
-                    animate={{ opacity: [0.3, 0.9, 0.3] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
+      <AnimatePresence>
+        {(storyboard || storyboardGenerating) && (
+          <motion.div
+            key="storyboard-section"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <SectionCard title="Storyboard">
+              <div className="flex flex-col gap-4">
+                {storyboardError && (
+                  <div
+                    className="rounded-lg px-3 py-2 text-xs"
+                    style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}
                   >
-                    🎨
-                  </motion.span>
-                </motion.div>
-              )}
+                    {storyboardError}
+                  </div>
+                )}
 
-              {imageUrl && (
-                <motion.div
-                  key="img-result"
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className="flex flex-col gap-2"
+                {storyboardGenerating && !storyboard && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="rounded-xl p-3 flex flex-col gap-2"
+                        style={{ background: 'var(--theme-border)', minHeight: 120 }}
+                        animate={{ opacity: [0.3, 0.7, 0.3] }}
+                        transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {storyboard && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {storyboard.map((scene) => (
+                        <motion.div
+                          key={scene.sceneNumber}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: (scene.sceneNumber - 1) * 0.06 }}
+                          className="rounded-xl p-3 flex flex-col gap-2"
+                          style={{
+                            background: 'var(--theme-border)',
+                            border: '1px solid rgba(255,255,255,0.06)',
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                              style={{ background: 'var(--theme-accent)', color: '#000' }}
+                            >
+                              S{scene.sceneNumber}
+                            </span>
+                            <span
+                              className="text-[11px] font-medium rounded px-2 py-0.5"
+                              style={{ background: 'rgba(124,58,237,0.2)', color: '#a78bfa' }}
+                            >
+                              {scene.angle}
+                            </span>
+                          </div>
+                          <p className="text-xs leading-relaxed" style={{ color: 'var(--theme-text)' }}>
+                            {scene.action}
+                          </p>
+                          <div
+                            className="rounded-lg px-2 py-1.5 text-[10px] leading-relaxed"
+                            style={{ background: 'rgba(0,0,0,0.2)', color: 'var(--theme-muted)' }}
+                          >
+                            <span className="font-medium" style={{ color: '#7c3aed' }}>VO: </span>
+                            {scene.voiceover_text}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-1">
+                      <motion.button
+                        onClick={storyboardGenerating ? undefined : generateStoryboard}
+                        disabled={storyboardGenerating}
+                        className="text-xs rounded px-3 py-1.5 transition-all hover:brightness-110"
+                        style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+                      >
+                        Regenerate Storyboard
+                      </motion.button>
+                      {!sceneImages.some((s) => s.url || s.generating) && (
+                        <motion.button
+                          onClick={generateAllSceneImages}
+                          className="flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-semibold hover:brightness-110 active:scale-95 cursor-pointer transition-all"
+                          style={{ background: '#9333ea', color: '#fff' }}
+                          whileTap={{ scale: 0.97 }}
+                        >
+                          🎨 Generate All Images →
+                        </motion.button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </SectionCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Scene Images Grid                                                   */}
+      {/* ------------------------------------------------------------------ */}
+      <AnimatePresence>
+        {sceneImages.some((s) => s.url || s.generating || s.error) && (
+          <motion.div
+            key="scene-images-section"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <SectionCard title={`Scene Images (${imagesReady}/6)`}>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {sceneImages.map((imgState, idx) => {
+                  const scene = storyboard?.[idx]
+                  return (
+                    <div key={idx} className="flex flex-col gap-2">
+                      {/* Label */}
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                          style={{ background: 'var(--theme-accent)', color: '#000' }}
+                        >
+                          S{idx + 1}
+                        </span>
+                        {scene && (
+                          <span className="text-[10px]" style={{ color: 'var(--theme-muted)' }}>
+                            {scene.angle}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Image slot */}
+                      <div
+                        className="relative rounded-xl overflow-hidden"
+                        style={{
+                          aspectRatio: '3/4',
+                          background: 'var(--theme-border)',
+                          border: '1px solid var(--theme-border)',
+                        }}
+                      >
+                        {imgState.generating && !imgState.url && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <motion.span
+                              className="text-2xl"
+                              animate={{ opacity: [0.3, 0.9, 0.3] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                            >
+                              🎨
+                            </motion.span>
+                          </div>
+                        )}
+                        {imgState.url && (
+                          <img
+                            src={imgState.url}
+                            alt={`Scene ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        {imgState.error && !imgState.url && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-2">
+                            <span className="text-[10px] text-center" style={{ color: '#ff5f6d' }}>
+                              {imgState.error}
+                            </span>
+                            <button
+                              onClick={() =>
+                                scene && generateSingleSceneImage(idx, scene.image_prompt)
+                              }
+                              className="text-[10px] rounded px-2 py-1 hover:brightness-110"
+                              style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
+                            >
+                              Retry
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Per-scene regen button */}
+                      {imgState.url && (
+                        <button
+                          onClick={() =>
+                            scene && generateSingleSceneImage(idx, scene.image_prompt)
+                          }
+                          className="text-[10px] rounded px-2 py-1 hover:brightness-110 transition-all self-start"
+                          style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+                        >
+                          Redo
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="flex items-center gap-3 flex-wrap pt-1">
+                <motion.button
+                  onClick={sceneImages.some((s) => s.generating) ? undefined : generateAllSceneImages}
+                  disabled={sceneImages.some((s) => s.generating)}
+                  className={cn(
+                    'flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all',
+                    sceneImages.some((s) => s.generating)
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'cursor-pointer hover:brightness-110 active:scale-95',
+                  )}
+                  style={{
+                    background: sceneImages.some((s) => s.generating)
+                      ? 'var(--theme-border)'
+                      : '#9333ea',
+                    color: sceneImages.some((s) => s.generating) ? 'var(--theme-muted)' : '#fff',
+                  }}
+                  whileTap={{ scale: 0.97 }}
                 >
-                  <img
-                    src={imageUrl}
-                    alt="Generated product visual"
-                    className="rounded-xl object-cover"
-                    style={{
-                      width: 280,
-                      height: 280,
-                      border: '1px solid var(--theme-border)',
-                    }}
-                  />
-                  <div className="flex gap-2">
-                    <a
-                      href={imageUrl}
-                      download="tiktok-product.webp"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs rounded px-3 py-1.5 hover:brightness-110 transition-all"
-                      style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                    >
-                      Download
-                    </a>
+                  {sceneImages.some((s) => s.generating) ? (
+                    <>
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      >
+                        ⟳
+                      </motion.span>
+                      Generating…
+                    </>
+                  ) : (
+                    <>🎨 {allImagesReady ? 'Regenerate All' : 'Generate All Images'}</>
+                  )}
+                </motion.button>
+
+                {allImagesReady && !sceneVideos.some((v) => v.url || v.generating) && (
+                  <motion.button
+                    onClick={generateAllSceneVideos}
+                    className="flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold hover:brightness-110 active:scale-95 cursor-pointer transition-all"
+                    style={{ background: '#e11d48', color: '#fff' }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    🎬 Generate All Videos →
+                  </motion.button>
+                )}
+              </div>
+            </SectionCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Scene Videos Grid                                                   */}
+      {/* ------------------------------------------------------------------ */}
+      <AnimatePresence>
+        {sceneVideos.some((v) => v.url || v.generating || v.error) && (
+          <motion.div
+            key="scene-videos-section"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <SectionCard title={`Scene Videos (${videosReady}/6)`}>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {sceneVideos.map((vidState, idx) => {
+                  const scene = storyboard?.[idx]
+                  const imgUrl = sceneImages[idx]?.url
+                  return (
+                    <div key={idx} className="flex flex-col gap-2">
+                      {/* Label */}
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                          style={{ background: vidState.url ? '#22c55e' : 'var(--theme-accent)', color: '#000' }}
+                        >
+                          S{idx + 1}
+                        </span>
+                        {scene && (
+                          <span className="text-[10px]" style={{ color: 'var(--theme-muted)' }}>
+                            {scene.angle}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Video slot */}
+                      <div
+                        className="relative rounded-xl overflow-hidden"
+                        style={{
+                          aspectRatio: '9/16',
+                          background: '#000',
+                          border: '1px solid var(--theme-border)',
+                          maxHeight: 220,
+                        }}
+                      >
+                        {vidState.generating && !vidState.url && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3">
+                            <motion.div
+                              className="w-2 h-2 rounded-full"
+                              style={{ background: '#e11d48' }}
+                              animate={{ opacity: [1, 0.2, 1] }}
+                              transition={{ duration: 0.9, repeat: Infinity }}
+                            />
+                            {vidState.progress && (
+                              <span
+                                className="text-[9px] text-center leading-relaxed"
+                                style={{ color: 'var(--theme-muted)' }}
+                              >
+                                {vidState.progress}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {vidState.url && (
+                          <video
+                            src={vidState.url}
+                            controls
+                            autoPlay
+                            loop
+                            playsInline
+                            muted
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        {vidState.error && !vidState.url && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-2">
+                            <span className="text-[9px] text-center" style={{ color: '#ff5f6d' }}>
+                              {vidState.error}
+                            </span>
+                            {imgUrl && scene && (
+                              <button
+                                onClick={() =>
+                                  generateSingleSceneVideo(idx, imgUrl, scene.action)
+                                }
+                                className="text-[10px] rounded px-2 py-1 hover:brightness-110"
+                                style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
+                              >
+                                Retry
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Per-scene redo */}
+                      {vidState.url && imgUrl && scene && (
+                        <button
+                          onClick={() => generateSingleSceneVideo(idx, imgUrl, scene.action)}
+                          className="text-[10px] rounded px-2 py-1 hover:brightness-110 transition-all self-start"
+                          style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+                        >
+                          Redo
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="flex items-center gap-3 flex-wrap pt-1">
+                <motion.button
+                  onClick={sceneVideos.some((v) => v.generating) ? undefined : generateAllSceneVideos}
+                  disabled={sceneVideos.some((v) => v.generating)}
+                  className={cn(
+                    'flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all',
+                    sceneVideos.some((v) => v.generating)
+                      ? 'cursor-not-allowed opacity-60'
+                      : 'cursor-pointer hover:brightness-110 active:scale-95',
+                  )}
+                  style={{
+                    background: sceneVideos.some((v) => v.generating) ? 'var(--theme-border)' : '#e11d48',
+                    color: sceneVideos.some((v) => v.generating) ? 'var(--theme-muted)' : '#fff',
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  {sceneVideos.some((v) => v.generating) ? (
+                    <>
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      >
+                        ⟳
+                      </motion.span>
+                      {`Generating… (${videosReady}/6 done)`}
+                    </>
+                  ) : (
+                    <>🎬 {allVideosReady ? 'Regenerate All' : 'Generate All Videos'}</>
+                  )}
+                </motion.button>
+
+                {allVideosReady && !mergedClipsUrl && !mergingClips && (
+                  <motion.button
+                    onClick={mergeAllClips}
+                    className="flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold hover:brightness-110 active:scale-95 cursor-pointer transition-all"
+                    style={{ background: 'var(--theme-accent)', color: '#000' }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    ⚡ Merge All Clips →
+                  </motion.button>
+                )}
+              </div>
+            </SectionCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Merge All Clips                                                     */}
+      {/* ------------------------------------------------------------------ */}
+      <AnimatePresence>
+        {(mergingClips || mergedClipsUrl || mergeClipsError) && (
+          <motion.div
+            key="merge-clips-section"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <SectionCard title="Merged Video">
+              <div className="flex flex-col gap-4">
+                {mergeClipsProgress && (
+                  <div
+                    className="flex items-center gap-3 rounded-lg px-4 py-3"
+                    style={{ background: 'rgba(0,255,65,0.06)', border: '1px solid var(--theme-border)' }}
+                  >
+                    <motion.div
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ background: 'var(--theme-accent)' }}
+                      animate={{ opacity: [1, 0.2, 1] }}
+                      transition={{ duration: 0.9, repeat: Infinity }}
+                    />
+                    <span className="text-xs font-mono" style={{ color: 'var(--theme-muted)' }}>
+                      {mergeClipsProgress}
+                    </span>
+                  </div>
+                )}
+
+                {mergeClipsError && (
+                  <div
+                    className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs"
+                    style={{ color: '#ff5f6d', background: 'rgba(255,95,109,0.1)' }}
+                  >
+                    <span>{mergeClipsError}</span>
                     <button
-                      onClick={() => {
-                        setImageUrl(null)
-                        setImageError(null)
-                        setVideoUrl(null)
-                        setVideoError(null)
-                      }}
-                      className="text-xs rounded px-3 py-1.5 hover:brightness-110 transition-all"
-                      style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+                      onClick={() => void mergeAllClips()}
+                      className="shrink-0 rounded px-2 py-1 font-medium hover:brightness-110"
+                      style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
                     >
-                      Regenerate
+                      Retry
                     </button>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                )}
 
-          {/* ── Video subsection — only shown after image exists ── */}
-          <AnimatePresence>
-            {imageUrl && (
-              <motion.div
-                key="video-section"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col gap-4"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--theme-muted)' }}>
-                    Video
-                  </span>
-                  <div className="flex-1 h-px" style={{ background: 'var(--theme-border)' }} />
-                </div>
+                {mergedClipsUrl && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col gap-3"
+                  >
+                    <p className="text-xs font-semibold" style={{ color: '#22c55e' }}>
+                      ✓ All {videosReady} clips merged into one video
+                    </p>
+                    <video
+                      src={mergedClipsUrl}
+                      controls
+                      autoPlay
+                      loop
+                      playsInline
+                      className="rounded-xl"
+                      style={{ maxWidth: 280, border: '1px solid var(--theme-border)', background: '#000' }}
+                    />
+                    <div className="flex gap-2 flex-wrap">
+                      <a
+                        href={mergedClipsUrl}
+                        download="tiktok-merged.mp4"
+                        className="text-xs rounded px-3 py-1.5 hover:brightness-110 transition-all"
+                        style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+                      >
+                        Download
+                      </a>
+                      <button
+                        onClick={() => void mergeAllClips()}
+                        className="text-xs rounded px-3 py-1.5 hover:brightness-110 transition-all"
+                        style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+                      >
+                        Re-merge
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
 
-                <div className="flex items-center gap-3">
+                {!mergedClipsUrl && !mergingClips && (
                   <motion.button
-                    onClick={videoGenerating ? undefined : generateVideo}
-                    disabled={videoGenerating}
+                    onClick={mergeAllClips}
+                    className="self-start flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold hover:brightness-110 active:scale-95 cursor-pointer transition-all"
+                    style={{ background: 'var(--theme-accent)', color: '#000' }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    ⚡ Merge All Clips
+                  </motion.button>
+                )}
+              </div>
+            </SectionCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Voiceover                                                           */}
+      {/* ------------------------------------------------------------------ */}
+      <AnimatePresence>
+        {(storyboard || script) && (
+          <motion.div
+            key="voice-section"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <SectionCard title="Voiceover (Bahasa Malaysia)">
+              <div className="flex flex-col gap-3">
+                {storyboard && (
+                  <div
+                    className="rounded-lg px-3 py-2 text-xs leading-relaxed"
+                    style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+                  >
+                    {storyboard.map((s) => s.voiceover_text).join(' ')}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 flex-wrap">
+                  <motion.button
+                    onClick={voiceGenerating ? undefined : generateVoice}
+                    disabled={voiceGenerating}
                     className={cn(
-                      'flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all',
-                      videoGenerating
+                      'flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all',
+                      voiceGenerating
                         ? 'cursor-not-allowed opacity-60'
                         : 'cursor-pointer hover:brightness-110 active:scale-95',
                     )}
                     style={{
-                      background: videoGenerating ? 'var(--theme-border)' : '#e11d48',
+                      background: voiceGenerating ? 'var(--theme-border)' : '#0d9488',
                       color: '#fff',
                     }}
-                    whileTap={videoGenerating ? {} : { scale: 0.97 }}
+                    whileTap={voiceGenerating ? {} : { scale: 0.97 }}
                   >
-                    {videoGenerating ? (
+                    {voiceGenerating ? (
                       <>
                         <motion.span
                           animate={{ rotate: 360 }}
@@ -1203,224 +1748,90 @@ export function TikTokScreen() {
                         </motion.span>
                         Generating…
                       </>
-                    ) : videoUrl ? (
-                      <>🎬 Regenerate Video</>
+                    ) : voiceUrl ? (
+                      <>🎙️ Regenerate Voice</>
                     ) : (
-                      <>🎬 Generate Video</>
+                      <>🎙️ Generate BM Voiceover</>
                     )}
                   </motion.button>
-
-                  {!videoGenerating && !videoUrl && (
-                    <span className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-                      Kling v1.6 Pro · 9:16 · 5s · ~2–3 min
+                  {!voiceGenerating && (
+                    <span className="text-[11px]" style={{ color: 'var(--theme-muted)' }}>
+                      Adam · ElevenLabs Turbo v2.5 · {storyboard ? '6-scene BM script' : 'full script'}
                     </span>
                   )}
                 </div>
 
-                {/* Retrieve last video — visible when a previous request ID exists */}
-                <AnimatePresence>
-                  {lastRequestId && !videoUrl && !videoGenerating && (
-                    <motion.div
-                      key="retrieve-row"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
+                {voiceError && (
+                  <div
+                    className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs"
+                    style={{ color: '#ff5f6d', background: 'rgba(255,95,109,0.1)' }}
+                  >
+                    <span>{voiceError}</span>
+                    <button
+                      onClick={() => void generateVoice()}
+                      className="shrink-0 rounded px-2 py-1 font-medium hover:brightness-110"
+                      style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
                     >
-                      <div className="flex items-center gap-3">
-                        <motion.button
-                          onClick={retrieving ? undefined : retrieveLastVideo}
-                          disabled={retrieving}
-                          className={cn(
-                            'flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-medium transition-all',
-                            retrieving
-                              ? 'cursor-not-allowed opacity-60'
-                              : 'cursor-pointer hover:brightness-110 active:scale-95',
-                          )}
-                          style={{
-                            background: 'var(--theme-border)',
-                            color: 'var(--theme-text)',
-                            border: '1px solid var(--theme-border)',
-                          }}
-                          whileTap={retrieving ? {} : { scale: 0.97 }}
-                        >
-                          {retrieving ? (
-                            <>
-                              <motion.span
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                              >
-                                ⟳
-                              </motion.span>
-                              Checking…
-                            </>
-                          ) : (
-                            <>↩ Retrieve Last Video</>
-                          )}
-                        </motion.button>
-                        <span className="text-[11px]" style={{ color: 'var(--theme-muted)' }}>
-                          ID …{lastRequestId.slice(-8)}
-                        </span>
-                        <button
-                          onClick={() => {
-                            localStorage.removeItem('fal_kling_last_request_id')
-                            setLastRequestId(null)
-                          }}
-                          className="text-[11px] hover:opacity-70 transition-opacity ml-auto"
-                          style={{ color: 'var(--theme-muted)' }}
-                          title="Forget this request"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      Retry
+                    </button>
+                  </div>
+                )}
 
-                {/* Progress indicator */}
                 <AnimatePresence>
-                  {videoGenerating && (
+                  {voiceUrl && (
                     <motion.div
-                      key="video-progress"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div
-                        className="flex items-center gap-3 rounded-lg px-4 py-3"
-                        style={{
-                          background: 'rgba(225,29,72,0.08)',
-                          border: '1px solid rgba(225,29,72,0.25)',
-                        }}
-                      >
-                        <motion.div
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ background: '#e11d48' }}
-                          animate={{ opacity: [1, 0.2, 1] }}
-                          transition={{ duration: 0.9, repeat: Infinity }}
-                        />
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-sm font-medium" style={{ color: 'var(--theme-text)' }}>
-                            Generating video… this takes 2–3 minutes
-                          </span>
-                          {videoProgress && (
-                            <span className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-                              {videoProgress}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Error */}
-                <AnimatePresence>
-                  {videoError && (
-                    <motion.div
-                      key="video-error"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
+                      key="audio-player"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
-                      className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs"
-                      style={{ color: '#ff5f6d', background: 'rgba(255,95,109,0.1)' }}
+                      className="flex flex-col gap-2"
                     >
-                      <span>{videoError}</span>
-                      <button
-                        onClick={() => {
-                          setVideoError(null)
-                          void generateVideo()
-                        }}
-                        className="shrink-0 rounded px-2 py-1 font-medium hover:brightness-110 transition-all"
-                        style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
-                      >
-                        Retry
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Video result */}
-                <AnimatePresence>
-                  {videoUrl && (
-                    <motion.div
-                      key="video-result"
-                      initial={{ opacity: 0, scale: 0.96 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.35 }}
-                      className="flex flex-col gap-3"
-                    >
-                      <video
-                        src={videoUrl}
+                      <audio
+                        src={voiceUrl}
                         controls
-                        autoPlay
-                        loop
-                        playsInline
-                        className="rounded-xl"
-                        style={{
-                          maxWidth: 280,
-                          border: '1px solid var(--theme-border)',
-                          background: '#000',
-                        }}
+                        className="w-full rounded-lg"
+                        style={{ accentColor: 'var(--theme-accent)', maxWidth: 420 }}
                       />
-                      <div className="flex gap-2">
-                        <a
-                          href={videoUrl}
-                          download="tiktok-video.mp4"
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs rounded px-3 py-1.5 hover:brightness-110 transition-all"
-                          style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                        >
-                          Download
-                        </a>
-                        <button
-                          onClick={() => {
-                            setVideoUrl(null)
-                            setVideoError(null)
-                          }}
-                          className="text-xs rounded px-3 py-1.5 hover:brightness-110 transition-all"
-                          style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                        >
-                          Regenerate
-                        </button>
-                      </div>
+                      <a
+                        href={voiceUrl}
+                        download="tiktok-voice.mp3"
+                        className="self-start text-[11px] rounded px-3 py-1 hover:brightness-110 transition-all"
+                        style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
+                      >
+                        Download MP3
+                      </a>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+            </SectionCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          {/* ── Merge subsection — appears once both video + voice are ready ── */}
-          <AnimatePresence>
-            {videoUrl && voiceUrl && (
-              <motion.div
-                key="merge-section"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col gap-4"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--theme-muted)' }}>
-                    Final Export
-                  </span>
-                  <div className="flex-1 h-px" style={{ background: 'var(--theme-border)' }} />
-                </div>
-
+      {/* ------------------------------------------------------------------ */}
+      {/* Final Export — merge voice with merged clips                       */}
+      {/* ------------------------------------------------------------------ */}
+      <AnimatePresence>
+        {mergedClipsUrl && voiceUrl && (
+          <motion.div
+            key="final-export-section"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+          >
+            <SectionCard title="Final Export">
+              <div className="flex flex-col gap-4">
                 {!mergedVideoUrl && (
                   <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-                    Combine your video and voiceover into a single MP4, ready to upload.
+                    Combine the 6-scene video with your BM voiceover into one final MP4.
                   </p>
                 )}
 
-                {/* Merge button */}
                 {!mergedVideoUrl && (
                   <div className="flex items-center gap-3 flex-wrap">
                     <motion.button
-                      onClick={merging ? undefined : mergeAudioVideo}
+                      onClick={merging ? undefined : mergeFinalVideo}
                       disabled={merging}
                       className={cn(
                         'flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all',
@@ -1456,7 +1867,6 @@ export function TikTokScreen() {
                   </div>
                 )}
 
-                {/* ffmpeg progress */}
                 <AnimatePresence>
                   {merging && mergeProgress && (
                     <motion.div
@@ -1468,10 +1878,7 @@ export function TikTokScreen() {
                     >
                       <div
                         className="flex items-center gap-3 rounded-lg px-4 py-3"
-                        style={{
-                          background: 'rgba(0,255,65,0.06)',
-                          border: '1px solid var(--theme-border)',
-                        }}
+                        style={{ background: 'rgba(0,255,65,0.06)', border: '1px solid var(--theme-border)' }}
                       >
                         <motion.div
                           className="w-2 h-2 rounded-full shrink-0"
@@ -1487,7 +1894,6 @@ export function TikTokScreen() {
                   )}
                 </AnimatePresence>
 
-                {/* Merge error */}
                 {mergeError && (
                   <div
                     className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs"
@@ -1495,7 +1901,7 @@ export function TikTokScreen() {
                   >
                     <span>{mergeError}</span>
                     <button
-                      onClick={() => void mergeAudioVideo()}
+                      onClick={() => void mergeFinalVideo()}
                       className="shrink-0 rounded px-2 py-1 font-medium hover:brightness-110"
                       style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
                     >
@@ -1504,7 +1910,6 @@ export function TikTokScreen() {
                   </div>
                 )}
 
-                {/* Merged video result */}
                 <AnimatePresence>
                   {mergedVideoUrl && (
                     <motion.div
@@ -1514,14 +1919,9 @@ export function TikTokScreen() {
                       transition={{ duration: 0.3 }}
                       className="flex flex-col gap-3"
                     >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="text-xs font-semibold"
-                          style={{ color: 'var(--theme-accent)' }}
-                        >
-                          ✓ Video with voiceover ready
-                        </span>
-                      </div>
+                      <p className="text-xs font-semibold" style={{ color: '#22c55e' }}>
+                        ✓ Final TikTok video with voiceover ready
+                      </p>
                       <video
                         src={mergedVideoUrl}
                         controls
@@ -1529,21 +1929,14 @@ export function TikTokScreen() {
                         loop
                         playsInline
                         className="rounded-xl"
-                        style={{
-                          maxWidth: 280,
-                          border: '1px solid var(--theme-border)',
-                          background: '#000',
-                        }}
+                        style={{ maxWidth: 280, border: '1px solid var(--theme-border)', background: '#000' }}
                       />
                       <div className="flex gap-2 flex-wrap">
                         <a
                           href={mergedVideoUrl}
                           download="tiktok-final.mp4"
                           className="text-xs rounded px-3 py-1.5 font-medium hover:brightness-110 transition-all"
-                          style={{
-                            background: 'var(--theme-accent)',
-                            color: '#000',
-                          }}
+                          style={{ background: 'var(--theme-accent)', color: '#000' }}
                         >
                           ⬇ Download Final MP4
                         </a>
@@ -1562,12 +1955,12 @@ export function TikTokScreen() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+            </SectionCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        </div>
-      </SectionCard>
     </div>
   )
 }
