@@ -49,25 +49,25 @@ interface SceneVideoState {
 // ---------------------------------------------------------------------------
 
 const PIPELINE_AGENTS = [
-  { name: 'ContentBoss', role: 'Content Manager', emoji: '👑', color: '#f59e0b', ms: 1200 },
-  { name: 'TrendHunter', role: 'Trend Scout', emoji: '🔥', color: '#ff0050', ms: 3500 },
-  { name: 'CopywriterAgent', role: 'Copywriter', emoji: '✍️', color: '#7c3aed', ms: 3500 },
-  { name: 'ComplianceAgent', role: 'Compliance Guard', emoji: '🛡️', color: '#0d9488', ms: 2500 },
-  { name: 'AnalyticsAgent', role: 'Analytics Specialist', emoji: '📊', color: '#2563eb', ms: 2000 },
+  { name: 'ContentBoss', role: 'Master Orchestrator', emoji: '👑', color: '#F59E0B', ms: 1200 },
+  { name: 'TrendHunter', role: 'Trend Scout', emoji: '🔍', color: '#6366F1', ms: 3500 },
+  { name: 'CopywriterAgent', role: 'BM Scriptwriter', emoji: '✍️', color: '#EC4899', ms: 3500 },
+  { name: 'ComplianceAgent', role: 'Compliance Guard', emoji: '🛡️', color: '#10B981', ms: 2500 },
+  { name: 'AnalyticsAgent', role: 'Analytics Specialist', emoji: '📊', color: '#14B8A6', ms: 2000 },
 ]
 
 const DEMO_PRODUCT: Product = {
   name: 'AeroGlow LED Face Mask',
-  price: '$49.99',
+  price: 'RM 219.00',
   trendScore: 94,
   viralReason:
     'Red light therapy trending +340% on FYP this week — skincare × tech combo drives saves & shares',
 }
 
 const DEMO_SCRIPT: Script = {
-  hook: "POV: You spent $300 on facials but this $49 mask does the same thing 👇",
-  body: "Red light therapy used to cost $200/session at spas. This AeroGlow mask brings clinical-grade LED tech home. 20 minutes, 3× a week — users are reporting clearer skin in just 2 weeks. The collagen boost is real. Over 50k sold this month alone.",
-  cta: "Comment \"GLOW\" and I'll DM you the link 🔗 Save this before it sells out again",
+  hook: "POV: You spent RM300 on facial tapi mask LED RM219 ni buat benda yang sama 👇",
+  body: "Red light therapy dulu kena pergi klinik, RM200 satu session. AeroGlow bawa teknologi tu masuk rumah. 20 minit, 3x seminggu — users report kulit lebih clear dalam 2 minggu. Collagen boost memang real. Dah 50k unit terjual bulan ni.",
+  cta: "Comment \"GLOW\" dan I akan DM link 🔗 Save ni sebelum habis stok",
 }
 
 const DEMO_STORYBOARD: Scene[] = [
@@ -110,8 +110,8 @@ const DEMO_STORYBOARD: Scene[] = [
     sceneNumber: 6,
     angle: 'Top Down',
     action: 'Top-down flat lay of the product with premium packaging, price tag, and CTA overlay',
-    image_prompt: 'Top-down flat lay of AeroGlow LED face mask with elegant premium packaging box on white background, $49.99 price tag visible, clean minimalist product photography, e-commerce style with soft shadows, photorealistic',
-    voiceover_text: 'Komen "GLOW" sekarang dan saya akan DM link terus kepada anda — jangan lepaskan peluang ini!',
+    image_prompt: 'Top-down flat lay of AeroGlow LED face mask with elegant premium packaging box on white background, RM219 price tag visible, clean minimalist product photography, e-commerce style with soft shadows, photorealistic',
+    voiceover_text: 'Comment "GLOW" sekarang dan saya akan DM link terus kepada anda — jangan lepaskan peluang ini!',
   },
 ]
 
@@ -121,176 +121,265 @@ const EMPTY_SCENE_VIDEO = (): SceneVideoState => ({
 })
 
 // ---------------------------------------------------------------------------
+// Design tokens
+// ---------------------------------------------------------------------------
+
+const T = {
+  bg:          '#FAFAF9',
+  card:        '#FFFFFF',
+  border:      '#E8E8E5',
+  borderStrong:'#DCDCD8',
+  accent:      '#F59E0B',
+  accentSoft:  '#FEF3E2',
+  accentLine:  '#F8DFB0',
+  accentInk:   '#B45309',
+  success:     '#10B981',
+  successSoft: '#ECFDF5',
+  successInk:  '#047857',
+  successLine: '#BBF7D6',
+  danger:      '#EF4444',
+  dangerSoft:  '#FEF2F2',
+  dangerInk:   '#B91C1C',
+  dangerLine:  '#FBCFCF',
+  info:        '#6366F1',
+  infoSoft:    '#EEF0FE',
+  infoInk:     '#4338CA',
+  ink:         '#1A1A1A',
+  ink2:        '#6B6B6B',
+  ink3:        '#9A9A96',
+  shadow:      '0 1px 3px rgba(17,17,17,0.05), 0 1px 2px rgba(17,17,17,0.03)',
+  shadowPop:   '0 8px 28px rgba(17,17,17,0.10), 0 2px 6px rgba(17,17,17,0.06)',
+}
+
+// ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function SectionCard({
-  title,
-  children,
-  className,
-}: {
-  title: string
-  children: React.ReactNode
-  className?: string
-}) {
+function Card({ children, style, className }: { children: React.ReactNode; style?: React.CSSProperties; className?: string }) {
   return (
     <div
-      className={cn('rounded-xl border p-5 flex flex-col gap-4', className)}
-      style={{ background: 'var(--theme-card)', borderColor: 'var(--theme-border)' }}
+      className={cn('flex flex-col gap-4', className)}
+      style={{
+        background: T.card,
+        border: `1px solid ${T.border}`,
+        borderRadius: 12,
+        padding: 22,
+        boxShadow: T.shadow,
+        ...style,
+      }}
     >
-      <h2
-        className="text-xs font-semibold uppercase tracking-widest"
-        style={{ color: 'var(--theme-accent)' }}
-      >
-        {title}
-      </h2>
       {children}
     </div>
   )
 }
 
-function Field({ label, value }: { label: string; value?: string | null }) {
+function SecLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
-        {label}
-      </span>
-      <span className="text-sm leading-relaxed" style={{ color: 'var(--theme-text)' }}>
-        {value ?? <span style={{ color: 'var(--theme-muted)' }}>—</span>}
-      </span>
+    <div style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '0.09em', textTransform: 'uppercase', color: T.ink3 }}>
+      {children}
     </div>
   )
 }
 
-function TrendBar({ score }: { score: number }) {
+function SecHead({ label, right }: { label: string; right?: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
-        Trend Score
-      </span>
-      <div className="flex items-center gap-3">
-        <div
-          className="flex-1 h-2 rounded-full overflow-hidden"
-          style={{ background: 'var(--theme-border)' }}
-        >
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: 'var(--theme-accent)' }}
-            initial={{ width: 0 }}
-            animate={{ width: `${score}%` }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-          />
-        </div>
-        <span
-          className="text-sm font-semibold tabular-nums w-8 text-right"
-          style={{ color: 'var(--theme-accent)' }}
-        >
-          {score}
-        </span>
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+      <SecLabel>{label}</SecLabel>
+      {right && <span style={{ fontSize: 12.5, color: T.ink2 }}>{right}</span>}
     </div>
   )
 }
 
-function AgentPill({
-  emoji,
-  name,
-  role,
-  color,
-  active,
-  done,
-}: {
-  emoji: string
-  name: string
-  role: string
-  color: string
-  active: boolean
-  done: boolean
-}) {
+function StatusBadge({ status }: { status: 'idle' | 'running' | 'done' | 'error' }) {
+  const map = {
+    idle:    { bg: '#F4F4F2', border: T.border,      ink: T.ink2,      dotBg: T.ink3,    label: 'Idle'    },
+    running: { bg: T.accentSoft,  border: T.accentLine, ink: T.accentInk, dotBg: T.accent,  label: 'Running' },
+    done:    { bg: T.successSoft, border: T.successLine,ink: T.successInk,dotBg: T.success, label: 'Done'    },
+    error:   { bg: T.dangerSoft,  border: T.dangerLine, ink: T.dangerInk, dotBg: T.danger,  label: 'Error'   },
+  }
+  const m = map[status] ?? map.idle
+  return (
+    <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:600, padding:'3px 9px', borderRadius:8, background:m.bg, border:`1px solid ${m.border}`, color:m.ink }}>
+      <motion.span
+        style={{ width:6, height:6, borderRadius:'50%', background:m.dotBg, display:'inline-block', flexShrink:0 }}
+        animate={status === 'running' ? { opacity:[1,0.3,1], scale:[1,0.7,1] } : {}}
+        transition={{ duration:1.3, repeat:Infinity }}
+      />
+      {m.label}
+    </span>
+  )
+}
+
+function AgentCard({
+  emoji, name, role, active, done,
+}: { emoji: string; name: string; role: string; active: boolean; done: boolean }) {
+  const agentStatus: 'idle' | 'running' | 'done' | 'error' = active ? 'running' : done ? 'done' : 'idle'
   return (
     <motion.div
-      className="flex items-center gap-2 rounded-lg px-3 py-2 transition-all"
       style={{
-        background: active
-          ? `${color}22`
-          : done
-            ? 'var(--theme-card2, var(--theme-card))'
-            : 'transparent',
-        border: `1px solid ${active ? color : done ? 'var(--theme-border)' : 'transparent'}`,
+        background: T.card,
+        border: `1px solid ${active ? T.accentLine : T.border}`,
+        borderRadius: 12,
+        padding: 14,
+        boxShadow: active ? `0 0 0 1px ${T.accentLine}, ${T.shadow}` : T.shadow,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+        transition: 'border-color .15s, box-shadow .15s',
       }}
-      animate={active ? { scale: [1, 1.02, 1] } : {}}
-      transition={{ duration: 0.6, repeat: active ? Infinity : 0 }}
     >
-      <span className="text-base">{emoji}</span>
-      <div className="flex flex-col">
-        <span
-          className="text-xs font-medium leading-tight"
-          style={{ color: active ? color : 'var(--theme-muted)' }}
-        >
-          {name}
-        </span>
-        <span className="text-[10px]" style={{ color: 'var(--theme-muted)' }}>
-          {role}
-        </span>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 10, border: `1px solid ${T.border}`,
+          background: '#F6F6F4', display: 'grid', placeItems: 'center', fontSize: 18, flexShrink: 0,
+        }}>
+          {emoji}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 600, fontSize: 13, letterSpacing: '-0.01em', color: T.ink }}>{name}</div>
+          <div style={{ fontSize: 11.5, color: T.ink2, marginTop: 1 }}>{role}</div>
+        </div>
       </div>
-      {active && (
-        <motion.div
-          className="ml-auto w-2 h-2 rounded-full"
-          style={{ background: color }}
-          animate={{ opacity: [1, 0.3, 1] }}
-          transition={{ duration: 0.8, repeat: Infinity }}
-        />
-      )}
-      {done && !active && (
-        <span className="ml-auto text-[10px]" style={{ color: 'var(--theme-muted)' }}>
-          ✓
-        </span>
-      )}
+      <StatusBadge status={agentStatus} />
     </motion.div>
   )
 }
 
-interface TrackerStep {
-  label: string
-  done: boolean
-  active: boolean
+function StepPill({ label, state }: { label: string; state: 'done' | 'current' | 'pending' }) {
+  const styles = {
+    done:    { bg: T.successSoft, border: T.successLine, color: T.successInk, dotBg: T.success },
+    current: { bg: T.accentSoft,  border: T.accentLine,  color: T.accentInk,  dotBg: T.accent  },
+    pending: { bg: T.card,        border: T.border,       color: T.ink2,       dotBg: T.ink3    },
+  }[state]
+
+  return (
+    <motion.div
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 7,
+        padding: '7px 13px', borderRadius: 999,
+        background: styles.bg, border: `1px solid ${styles.border}`,
+        color: styles.color, fontSize: 13, fontWeight: state === 'current' ? 600 : 500,
+        whiteSpace: 'nowrap',
+        boxShadow: state === 'current' ? `0 0 0 3px ${T.accentSoft}` : undefined,
+      }}
+      animate={state === 'current' ? { opacity: [0.8, 1, 0.8] } : {}}
+      transition={{ duration: 1.4, repeat: Infinity }}
+    >
+      <span style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${state === 'pending' ? T.borderStrong : styles.dotBg}`, background: state !== 'pending' ? styles.dotBg : undefined, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+        {state === 'done' && <svg viewBox="0 0 12 12" width={9} height={9} fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M2 6.5l2.5 2.5 5-5"/></svg>}
+        {state === 'current' && <svg viewBox="0 0 12 12" width={7} height={7} fill={T.card}><circle cx="6" cy="6" r="4"/></svg>}
+      </span>
+      {label}
+    </motion.div>
+  )
 }
 
-function StepTracker({ steps }: { steps: TrackerStep[] }) {
+function Arrow() {
   return (
-    <div className="flex items-center gap-1 flex-wrap">
-      {steps.map((step, i) => (
-        <span key={step.label} className="flex items-center gap-1">
-          <motion.div
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium select-none"
-            style={{
-              background: step.done
-                ? 'rgba(34,197,94,0.15)'
-                : step.active
-                  ? 'rgba(245,158,11,0.15)'
-                  : 'var(--theme-border)',
-              border: `1px solid ${
-                step.done
-                  ? 'rgba(34,197,94,0.4)'
-                  : step.active
-                    ? 'rgba(245,158,11,0.4)'
-                    : 'transparent'
-              }`,
-              color: step.done ? '#22c55e' : step.active ? '#f59e0b' : 'var(--theme-muted)',
-            }}
-            animate={step.active ? { opacity: [0.7, 1, 0.7] } : {}}
-            transition={{ duration: 1.2, repeat: step.active ? Infinity : 0 }}
-          >
-            <span>{step.done ? '✓' : step.active ? '◉' : '○'}</span>
-            {step.label}
-          </motion.div>
-          {i < steps.length - 1 && (
-            <span className="text-[10px]" style={{ color: 'var(--theme-muted)' }}>
-              →
-            </span>
-          )}
-        </span>
+    <span style={{ color: T.ink3, flexShrink: 0, padding: '0 2px' }}>
+      <svg viewBox="0 0 14 14" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 7h10M8 3.5l3.5 3.5L8 10.5"/>
+      </svg>
+    </span>
+  )
+}
+
+function RunBtn({ running, onClick }: { running: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={running ? undefined : onClick}
+      disabled={running}
+      style={{
+        width: '100%', padding: '15px 16px', fontSize: 15, fontWeight: 600,
+        borderRadius: 10, border: 'none', cursor: running ? 'default' : 'pointer',
+        color: running ? T.ink3 : '#fff',
+        background: running ? '#F4F4F2' : T.accent,
+        boxShadow: running ? 'none' : '0 2px 8px rgba(245,158,11,.30), inset 0 1px 0 rgba(255,255,255,.28)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+        transition: 'filter .15s, box-shadow .15s',
+        borderWidth: running ? 1 : 0,
+        borderStyle: running ? 'solid' : undefined,
+        borderColor: running ? T.border : undefined,
+      }}
+    >
+      {running ? (
+        <>
+          <motion.span
+            style={{ width: 15, height: 15, borderRadius: '50%', border: `2px solid rgba(0,0,0,.15)`, borderTopColor: T.ink3, display: 'inline-block' }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}
+          />
+          Running pipeline…
+        </>
+      ) : (
+        <>
+          <svg viewBox="0 0 16 16" width={15} height={15} fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg>
+          Run Daily Pipeline
+        </>
+      )}
+    </button>
+  )
+}
+
+function ScriptBlock({ script, onCopy }: { script: Script; onCopy: () => void }) {
+  const segments = [
+    { key: 'hook', label: 'Hook',  text: script.hook, borderColor: T.accent },
+    { key: 'body', label: 'Body',  text: script.body, borderColor: T.info },
+    { key: 'cta',  label: 'CTA',   text: script.cta,  borderColor: T.success },
+  ]
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {segments.map((s) => (
+        <div key={s.key} style={{ borderLeft: `3px solid ${s.borderColor}`, paddingLeft: 14 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: T.ink3, marginBottom: 4 }}>{s.label}</div>
+          <div style={{ fontSize: 13.5, color: T.ink, lineHeight: 1.55 }}>{s.text}</div>
+        </div>
       ))}
+      <button
+        onClick={onCopy}
+        style={{ alignSelf: 'flex-start', fontSize: 12, padding: '5px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: T.card, color: T.ink2, cursor: 'pointer', fontWeight: 500 }}
+      >
+        Copy Script
+      </button>
+    </div>
+  )
+}
+
+function TrendBadge({ score }: { score: number }) {
+  return (
+    <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:700, padding:'4px 10px', borderRadius:999, background:T.accentSoft, color:T.accentInk, border:`1px solid ${T.accentLine}` }}>
+      <svg viewBox="0 0 12 12" width={11} height={11} fill={T.accent}><path d="M6 1l1.3 3.5H11l-2.9 2 1.1 3.5L6 8.2 2.8 10l1.1-3.5L1 4.5h3.7z"/></svg>
+      {score} trend
+    </span>
+  )
+}
+
+function EmptyHint({ children }: { children: React.ReactNode }) {
+  return <p style={{ fontSize: 13.5, color: T.ink3 }}>{children}</p>
+}
+
+function ErrorBar({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, borderRadius:8, padding:'9px 12px', fontSize:12.5, color:T.dangerInk, background:T.dangerSoft, border:`1px solid ${T.dangerLine}` }}>
+      <span>{message}</span>
+      {onRetry && (
+        <button onClick={onRetry} style={{ flexShrink:0, borderRadius:6, padding:'3px 10px', fontSize:12, fontWeight:600, background:T.card, border:`1px solid ${T.dangerLine}`, color:T.dangerInk, cursor:'pointer' }}>
+          Retry
+        </button>
+      )}
+    </div>
+  )
+}
+
+function ProgressBar({ message }: { message: string }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:12, borderRadius:8, padding:'10px 14px', background:T.accentSoft, border:`1px solid ${T.accentLine}` }}>
+      <motion.span
+        style={{ width:8, height:8, borderRadius:'50%', background:T.accent, display:'inline-block', flexShrink:0 }}
+        animate={{ opacity:[1,0.3,1] }}
+        transition={{ duration:0.9, repeat:Infinity }}
+      />
+      <span style={{ fontSize:12, fontFamily:'ui-monospace, monospace', color:T.accentInk }}>{message}</span>
     </div>
   )
 }
@@ -458,11 +547,9 @@ export function TikTokScreen() {
 
       const scenes = (data.scenes ?? []) as Scene[]
       if (scenes.length === 0) throw new Error('No scenes returned')
-      // Pad to 6 with demo data if API returned fewer
       const padded: Scene[] = Array.from({ length: 6 }, (_, i) => scenes[i] ?? DEMO_STORYBOARD[i])
       setStoryboard(padded)
     } catch (err) {
-      // Fall back to demo storyboard on error so user can still explore the UI
       setStoryboard(DEMO_STORYBOARD)
       setStoryboardError(
         `${err instanceof Error ? err.message : 'Storyboard generation failed'} — loaded demo storyboard`,
@@ -637,7 +724,6 @@ export function TikTokScreen() {
 
   const generateAllSceneVideos = useCallback(async () => {
     if (!storyboard) return
-    // Submit all 6 to the queue simultaneously — each polls independently
     await Promise.all(
       storyboard.map((scene, idx) => {
         const imgUrl = sceneImages[idx]?.url
@@ -706,7 +792,7 @@ export function TikTokScreen() {
 
       const data = await ff.readFile('merged_clips.mp4')
       setMergedClipsUrl(
-        URL.createObjectURL(new Blob([data as Uint8Array], { type: 'video/mp4' })),
+        URL.createObjectURL(new Blob([data as Uint8Array<ArrayBuffer>], { type: 'video/mp4' })),
       )
       setMergeClipsProgress('')
 
@@ -724,7 +810,7 @@ export function TikTokScreen() {
   }, [sceneVideos, mergedClipsUrl])
 
   // -------------------------------------------------------------------------
-  // Voice generation via ElevenLabs TTS — uses storyboard voiceover texts
+  // Voice generation via ElevenLabs TTS
   // -------------------------------------------------------------------------
 
   const generateVoice = useCallback(async () => {
@@ -740,7 +826,6 @@ export function TikTokScreen() {
     setVoiceUrl(null)
     voiceBytesRef.current = null
 
-    // Use storyboard voiceover texts when available, otherwise fall back to script
     const text = storyboard
       ? storyboard.map((s) => s.voiceover_text).join(' ').replace(/\s+/g, ' ').trim()
       : script
@@ -845,7 +930,7 @@ export function TikTokScreen() {
 
       const data = await ff.readFile('output.mp4')
       setMergedVideoUrl(
-        URL.createObjectURL(new Blob([data as Uint8Array], { type: 'video/mp4' })),
+        URL.createObjectURL(new Blob([data as Uint8Array<ArrayBuffer>], { type: 'video/mp4' })),
       )
       setMergeProgress('')
 
@@ -869,1098 +954,503 @@ export function TikTokScreen() {
   const isRunning = status === 'running'
   const isDone = status === 'done'
 
-  // ── Progress tracker steps ──
-  const trackerSteps: TrackerStep[] = [
-    {
-      label: 'Script',
-      done: script !== null,
-      active: isRunning && script === null,
-    },
-    {
-      label: 'Storyboard',
-      done: storyboard !== null,
-      active: storyboardGenerating,
-    },
-    {
-      label: `Images (${imagesReady}/6)`,
-      done: allImagesReady,
-      active: sceneImages.some((s) => s.generating),
-    },
-    {
-      label: `Videos (${videosReady}/6)`,
-      done: allVideosReady,
-      active: sceneVideos.some((s) => s.generating),
-    },
-    {
-      label: 'Merge',
-      done: mergedClipsUrl !== null,
-      active: mergingClips,
-    },
-    {
-      label: 'Voice',
-      done: voiceUrl !== null,
-      active: voiceGenerating,
-    },
-    {
-      label: 'Done',
-      done: mergedVideoUrl !== null,
-      active: merging,
-    },
+  // ── Stepper steps (7-step pipeline) ──
+  type StepState = 'done' | 'current' | 'pending'
+
+  const stepperSteps: { label: string; state: StepState }[] = [
+    { label: 'Script',                state: script ? 'done' : isRunning && !script ? 'current' : 'pending' },
+    { label: 'Storyboard',            state: storyboard ? 'done' : storyboardGenerating ? 'current' : 'pending' },
+    { label: `Images (${imagesReady}/6)`, state: allImagesReady ? 'done' : sceneImages.some((s) => s.generating) ? 'current' : 'pending' },
+    { label: `Videos (${videosReady}/6)`, state: allVideosReady ? 'done' : sceneVideos.some((s) => s.generating) ? 'current' : 'pending' },
+    { label: 'Merge',                 state: mergedClipsUrl ? 'done' : mergingClips ? 'current' : 'pending' },
+    { label: 'Voice',                 state: voiceUrl ? 'done' : voiceGenerating ? 'current' : 'pending' },
+    { label: 'Done',                  state: mergedVideoUrl ? 'done' : merging ? 'current' : 'pending' },
   ]
+
+  const pipelineOverallStatus: 'idle' | 'running' | 'done' | 'error' =
+    mergedVideoUrl ? 'done' : isRunning || storyboardGenerating || sceneImages.some(s=>s.generating) || sceneVideos.some(v=>v.generating) || mergingClips || voiceGenerating || merging ? 'running' : 'idle'
 
   return (
     <div
-      className="min-h-screen p-6 flex flex-col gap-6"
-      style={{ background: 'var(--theme-bg)' }}
+      style={{
+        minHeight: '100%',
+        background: T.bg,
+        padding: '30px 34px 80px',
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        color: T.ink,
+        fontSize: 14,
+        lineHeight: 1.5,
+      }}
     >
       {/* ------------------------------------------------------------------ */}
-      {/* Header                                                              */}
+      {/* Page Header                                                         */}
       {/* ------------------------------------------------------------------ */}
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--theme-text)' }}>
-          🎬 TikTok Pipeline
-        </h1>
-        <p className="text-sm" style={{ color: 'var(--theme-muted)' }}>
-          Agent-powered storyboard pipeline — script to 6-scene cinematic TikTok in one flow
-        </p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20, marginBottom: 26 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em', color: T.ink, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 22 }}>🎬</span> TikTok Pipeline
+          </h1>
+          <p style={{ margin: '6px 0 0', fontSize: 14, color: T.ink2, maxWidth: 560 }}>
+            Agent-powered storyboard pipeline — script to 6-scene cinematic TikTok in one run.
+          </p>
+        </div>
+        <StatusBadge status={pipelineOverallStatus} />
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Progress Tracker                                                    */}
+      {/* Pipeline Progress Stepper                                           */}
       {/* ------------------------------------------------------------------ */}
-      <SectionCard title="Pipeline Progress">
-        <StepTracker steps={trackerSteps} />
-      </SectionCard>
+      <Card style={{ marginBottom: 20 }}>
+        <SecHead label="Pipeline Progress" right={isRunning ? 'In progress' : isDone ? 'Completed' : 'Idle'} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+          {stepperSteps.map((step, i) => (
+            <span key={step.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <StepPill label={step.label} state={step.state} />
+              {i < stepperSteps.length - 1 && <Arrow />}
+            </span>
+          ))}
+        </div>
+      </Card>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Row 1: Pipeline Control + Agent Status                             */}
+      {/* Main 2-col grid                                                     */}
       {/* ------------------------------------------------------------------ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
 
-        {/* Pipeline Control */}
-        <SectionCard title="Pipeline Control">
-          <div className="flex flex-col gap-3">
-            <p className="text-sm" style={{ color: 'var(--theme-muted)' }}>
-              Runs the full 5-agent content pipeline: trend research → copywriting → compliance → analytics.
+        {/* ── Left column ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Pipeline Control */}
+          <Card>
+            <SecHead label="Pipeline Control" />
+            <p style={{ margin: 0, fontSize: 13.5, color: T.ink2 }}>
+              Runs the full {PIPELINE_AGENTS.length}-agent content pipeline: trend research → script → compliance → analytics.
             </p>
-
-            <motion.button
-              onClick={isRunning ? undefined : runPipeline}
-              disabled={isRunning}
-              className={cn(
-                'relative flex items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold transition-all',
-                isRunning
-                  ? 'cursor-not-allowed opacity-70'
-                  : 'cursor-pointer hover:brightness-110 active:scale-95',
-              )}
-              style={{
-                background: isRunning ? 'var(--theme-border)' : 'var(--theme-accent)',
-                color: isRunning ? 'var(--theme-muted)' : '#000',
-              }}
-              whileTap={isRunning ? {} : { scale: 0.97 }}
-            >
-              {isRunning ? (
-                <>
-                  <motion.span
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    className="inline-block"
-                  >
-                    ⟳
-                  </motion.span>
-                  Pipeline Running…
-                </>
-              ) : (
-                <>▶ Run Daily Pipeline</>
-              )}
-            </motion.button>
+            <RunBtn running={isRunning} onClick={runPipeline} />
 
             {sessionKey && (
-              <p className="text-[11px]" style={{ color: 'var(--theme-muted)' }}>
-                Mission ID: <code className="opacity-70">{sessionKey}</code>
+              <p style={{ margin: 0, fontSize: 11, color: T.ink3 }}>
+                Mission ID: <code style={{ opacity: 0.7 }}>{sessionKey}</code>
               </p>
             )}
-
-            {pipelineError && (
-              <p className="text-xs rounded-lg px-3 py-2" style={{ color: '#ff5f6d', background: 'rgba(255,95,109,0.1)' }}>
-                {pipelineError}
-              </p>
-            )}
-
-            {isDone && (
-              <p className="text-xs" style={{ color: 'var(--theme-accent)' }}>
+            {pipelineError && <ErrorBar message={pipelineError} />}
+            {isDone && !storyboard && (
+              <p style={{ margin: 0, fontSize: 12.5, color: T.successInk }}>
                 ✓ Pipeline complete — generate storyboard below
               </p>
             )}
-          </div>
-        </SectionCard>
 
-        {/* Active Agent Status */}
-        <SectionCard title="Agent Status">
-          <div className="flex flex-col gap-1.5">
-            {PIPELINE_AGENTS.map((agent, i) => (
-              <AgentPill
-                key={agent.name}
-                {...agent}
-                active={activeAgentIdx === i}
-                done={doneUpTo >= i}
-              />
-            ))}
+            {/* Today's Product */}
+            <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 18 }}>
+              <SecLabel>Today's Product</SecLabel>
+              <div style={{ marginTop: 12 }}>
+                <AnimatePresence mode="wait">
+                  {isRunning && !product ? (
+                    <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {['Product name', 'Price'].map((lbl) => (
+                        <div key={lbl}>
+                          <div style={{ fontSize: 11, color: T.ink3, marginBottom: 4 }}>{lbl}</div>
+                          <motion.div style={{ height: 14, borderRadius: 4, background: T.border, width: '55%' }} animate={{ opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 1.4, repeat: Infinity }} />
+                        </div>
+                      ))}
+                    </motion.div>
+                  ) : product ? (
+                    <motion.div key="data" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ width: 50, height: 50, borderRadius: 10, flexShrink: 0, border: `1px solid ${T.border}`, background: `repeating-linear-gradient(45deg, #F4F4F2, #F4F4F2 6px, #EDEDEA 6px, #EDEDEA 12px)`, display: 'grid', placeItems: 'center', fontSize: 22 }}>
+                        💄
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: T.ink }}>{product.name}</div>
+                        <div style={{ fontSize: 12.5, color: T.ink2, marginTop: 2 }}>{product.price} · {product.trendScore}% trend</div>
+                        <div style={{ fontSize: 12, color: T.ink2, marginTop: 3, lineHeight: 1.4 }}>{product.viralReason}</div>
+                      </div>
+                      <TrendBadge score={product.trendScore} />
+                    </motion.div>
+                  ) : (
+                    <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                      <EmptyHint>{isRunning ? 'TrendHunter is scanning Malaysian TikTok Shop…' : 'Run the pipeline to discover today\'s trending product.'}</EmptyHint>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </Card>
+
+          {/* Generated Script */}
+          <Card>
+            <SecHead label="Generated Script" />
+            <AnimatePresence mode="wait">
+              {isRunning && !script ? (
+                <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {['Hook', 'Body', 'CTA'].map((lbl, i) => (
+                    <div key={lbl} style={{ borderLeft: `3px solid ${T.border}`, paddingLeft: 14 }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: T.ink3, marginBottom: 5 }}>{lbl}</div>
+                      <motion.div style={{ height: 13, borderRadius: 4, background: T.border, width: i === 1 ? '100%' : '70%' }} animate={{ opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.2 }} />
+                    </div>
+                  ))}
+                </motion.div>
+              ) : script ? (
+                <motion.div key="data" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+                  <ScriptBlock
+                    script={script}
+                    onCopy={() => navigator.clipboard.writeText(`HOOK:\n${script.hook}\n\nBODY:\n${script.body}\n\nCTA:\n${script.cta}`)}
+                  />
+                  {!storyboard && (
+                    <div style={{ marginTop: 14 }}>
+                      <button
+                        onClick={storyboardGenerating ? undefined : generateStoryboard}
+                        disabled={storyboardGenerating}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 7,
+                          padding: '8px 16px', borderRadius: 8, border: 'none', cursor: storyboardGenerating ? 'default' : 'pointer',
+                          fontSize: 13, fontWeight: 600,
+                          background: storyboardGenerating ? T.border : '#7C3AED',
+                          color: storyboardGenerating ? T.ink2 : '#fff',
+                          opacity: storyboardGenerating ? 0.65 : 1,
+                        }}
+                      >
+                        {storyboardGenerating ? (
+                          <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>⟳</motion.span> Generating Storyboard…</>
+                        ) : (
+                          <>🎞️ Generate Storyboard →</>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <EmptyHint>CopywriterAgent will generate your hook, body, and CTA after the pipeline runs.</EmptyHint>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
+
+          {/* Storyboard */}
+          <AnimatePresence>
+            {(storyboard || storyboardGenerating) && (
+              <motion.div key="storyboard" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <Card>
+                  <SecHead label="Storyboard — 6 Scenes" right="9:16 · cinematic" />
+
+                  {storyboardError && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, fontSize: 12.5, color: T.accentInk, background: T.accentSoft, border: `1px solid ${T.accentLine}` }}>
+                      {storyboardError}
+                    </div>
+                  )}
+
+                  {storyboardGenerating && !storyboard ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <motion.div key={i} style={{ borderRadius: 10, background: T.border, aspectRatio: '9/16', minHeight: 120 }} animate={{ opacity: [0.3, 0.7, 0.3] }} transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }} />
+                      ))}
+                    </div>
+                  ) : storyboard ? (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                        {storyboard.map((scene) => (
+                          <motion.div
+                            key={scene.sceneNumber}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: (scene.sceneNumber - 1) * 0.06 }}
+                            style={{ borderRadius: 10, border: `1px solid ${T.border}`, overflow: 'hidden', background: T.card }}
+                          >
+                            <div style={{ aspectRatio: '9/16', background: `repeating-linear-gradient(45deg,#F4F4F2,#F4F4F2 7px,#EDEDEA 7px,#EDEDEA 14px)`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexDirection: 'column', gap: 6 }}>
+                              <span style={{ position: 'absolute', top: 7, left: 7, background: T.card, border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 10, fontWeight: 700, padding: '2px 6px', color: T.ink }}>{scene.sceneNumber}</span>
+                              <span style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', color: T.ink3 }}>{scene.angle}</span>
+                            </div>
+                            <div style={{ padding: '8px 10px', borderTop: `1px solid ${T.border}` }}>
+                              <div style={{ fontSize: 11.5, color: T.ink2, lineHeight: 1.4 }}>{scene.action}</div>
+                              <div style={{ marginTop: 6, padding: '5px 8px', borderRadius: 6, background: T.accentSoft, fontSize: 10.5, color: T.accentInk, lineHeight: 1.4 }}>
+                                <span style={{ fontWeight: 700 }}>VO: </span>{scene.voiceover_text}
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', paddingTop: 4 }}>
+                        <button
+                          onClick={storyboardGenerating ? undefined : generateStoryboard}
+                          disabled={storyboardGenerating}
+                          style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${T.border}`, background: T.card, fontSize: 12.5, color: T.ink2, cursor: 'pointer', fontWeight: 500 }}
+                        >
+                          Regenerate Storyboard
+                        </button>
+                        {!sceneImages.some((s) => s.url || s.generating) && (
+                          <button
+                            onClick={generateAllSceneImages}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 16px', borderRadius: 8, border: 'none', background: '#9333EA', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+                          >
+                            🎨 Generate All Images →
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  ) : null}
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Scene Images */}
+          <AnimatePresence>
+            {sceneImages.some((s) => s.url || s.generating || s.error) && (
+              <motion.div key="scene-images" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <Card>
+                  <SecHead label={`Scene Images (${imagesReady}/6)`} right={allImagesReady ? 'All ready' : sceneImages.some(s=>s.generating) ? 'Generating…' : undefined} />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                    {sceneImages.map((imgState, idx) => {
+                      const scene = storyboard?.[idx]
+                      return (
+                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '1.5px 7px', borderRadius: 999, background: imgState.url ? T.successSoft : T.accentSoft, color: imgState.url ? T.successInk : T.accentInk, border: `1px solid ${imgState.url ? T.successLine : T.accentLine}` }}>S{idx + 1}</span>
+                            {scene && <span style={{ fontSize: 10.5, color: T.ink3 }}>{scene.angle}</span>}
+                          </div>
+                          <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', aspectRatio: '3/4', background: T.border, border: `1px solid ${T.border}` }}>
+                            {imgState.generating && !imgState.url && (
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <motion.span style={{ fontSize: 24 }} animate={{ opacity: [0.3, 0.9, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}>🎨</motion.span>
+                              </div>
+                            )}
+                            {imgState.url && <img src={imgState.url} alt={`Scene ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                            {imgState.error && !imgState.url && (
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 8 }}>
+                                <span style={{ fontSize: 10, textAlign: 'center', color: T.dangerInk }}>{imgState.error}</span>
+                                <button onClick={() => scene && generateSingleSceneImage(idx, scene.image_prompt)} style={{ fontSize: 10, padding: '3px 10px', borderRadius: 6, background: T.dangerSoft, border: `1px solid ${T.dangerLine}`, color: T.dangerInk, cursor: 'pointer' }}>Retry</button>
+                              </div>
+                            )}
+                          </div>
+                          {imgState.url && (
+                            <button onClick={() => scene && generateSingleSceneImage(idx, scene.image_prompt)} style={{ alignSelf: 'flex-start', fontSize: 10, padding: '3px 10px', borderRadius: 6, border: `1px solid ${T.border}`, background: T.card, color: T.ink2, cursor: 'pointer' }}>Redo</button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={sceneImages.some(s=>s.generating) ? undefined : generateAllSceneImages}
+                      disabled={sceneImages.some(s=>s.generating)}
+                      style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'8px 16px', borderRadius:8, border:'none', background: sceneImages.some(s=>s.generating) ? T.border : '#9333EA', color: sceneImages.some(s=>s.generating) ? T.ink2 : '#fff', fontSize:12.5, fontWeight:600, cursor: sceneImages.some(s=>s.generating) ? 'default' : 'pointer', opacity: sceneImages.some(s=>s.generating) ? 0.65 : 1 }}
+                    >
+                      {sceneImages.some(s=>s.generating) ? <><motion.span animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}}>⟳</motion.span> Generating…</> : <>🎨 {allImagesReady ? 'Regenerate All' : 'Generate All Images'}</>}
+                    </button>
+                    {allImagesReady && !sceneVideos.some(v=>v.url||v.generating) && (
+                      <button onClick={generateAllSceneVideos} style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'8px 16px', borderRadius:8, border:'none', background:'#E11D48', color:'#fff', fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
+                        🎬 Generate All Videos →
+                      </button>
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Scene Videos */}
+          <AnimatePresence>
+            {sceneVideos.some((v) => v.url || v.generating || v.error) && (
+              <motion.div key="scene-videos" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <Card>
+                  <SecHead label={`Scene Videos (${videosReady}/6)`} right={allVideosReady ? 'All ready' : sceneVideos.some(v=>v.generating) ? `Generating… (${videosReady}/6 done)` : undefined} />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                    {sceneVideos.map((vidState, idx) => {
+                      const scene = storyboard?.[idx]
+                      const imgUrl = sceneImages[idx]?.url
+                      return (
+                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '1.5px 7px', borderRadius: 999, background: vidState.url ? T.successSoft : T.accentSoft, color: vidState.url ? T.successInk : T.accentInk, border: `1px solid ${vidState.url ? T.successLine : T.accentLine}` }}>S{idx + 1}</span>
+                            {scene && <span style={{ fontSize: 10.5, color: T.ink3 }}>{scene.angle}</span>}
+                          </div>
+                          <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', aspectRatio: '9/16', background: '#000', border: `1px solid ${T.border}`, maxHeight: 200 }}>
+                            {vidState.generating && !vidState.url && (
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 10 }}>
+                                <motion.div style={{ width: 8, height: 8, borderRadius: '50%', background: '#E11D48' }} animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 0.9, repeat: Infinity }} />
+                                {vidState.progress && <span style={{ fontSize: 9.5, textAlign: 'center', color: T.ink3, lineHeight: 1.4 }}>{vidState.progress}</span>}
+                              </div>
+                            )}
+                            {vidState.url && <video src={vidState.url} controls autoPlay loop playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                            {vidState.error && !vidState.url && (
+                              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 8 }}>
+                                <span style={{ fontSize: 9.5, textAlign: 'center', color: T.dangerInk }}>{vidState.error}</span>
+                                {imgUrl && scene && <button onClick={() => generateSingleSceneVideo(idx, imgUrl, scene.action)} style={{ fontSize: 10, padding: '3px 10px', borderRadius: 6, background: T.dangerSoft, border: `1px solid ${T.dangerLine}`, color: T.dangerInk, cursor: 'pointer' }}>Retry</button>}
+                              </div>
+                            )}
+                          </div>
+                          {vidState.url && imgUrl && scene && (
+                            <button onClick={() => generateSingleSceneVideo(idx, imgUrl, scene.action)} style={{ alignSelf: 'flex-start', fontSize: 10, padding: '3px 10px', borderRadius: 6, border: `1px solid ${T.border}`, background: T.card, color: T.ink2, cursor: 'pointer' }}>Redo</button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={sceneVideos.some(v=>v.generating) ? undefined : generateAllSceneVideos}
+                      disabled={sceneVideos.some(v=>v.generating)}
+                      style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'8px 16px', borderRadius:8, border:'none', background: sceneVideos.some(v=>v.generating) ? T.border : '#E11D48', color: sceneVideos.some(v=>v.generating) ? T.ink2 : '#fff', fontSize:12.5, fontWeight:600, cursor: sceneVideos.some(v=>v.generating) ? 'default' : 'pointer', opacity: sceneVideos.some(v=>v.generating) ? 0.65 : 1 }}
+                    >
+                      {sceneVideos.some(v=>v.generating) ? <><motion.span animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}}>⟳</motion.span> {`Generating… (${videosReady}/6 done)`}</> : <>🎬 {allVideosReady ? 'Regenerate All' : 'Generate All Videos'}</>}
+                    </button>
+                    {allVideosReady && !mergedClipsUrl && !mergingClips && (
+                      <button onClick={() => void mergeAllClips()} style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'8px 16px', borderRadius:8, border:'none', background:T.accent, color:'#fff', fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
+                        ⚡ Merge All Clips →
+                      </button>
+                    )}
+                  </div>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Merge Clips */}
+          <AnimatePresence>
+            {(mergingClips || mergedClipsUrl || mergeClipsError) && (
+              <motion.div key="merge-clips" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <Card>
+                  <SecHead label="Merged Video" />
+                  {mergeClipsProgress && <ProgressBar message={mergeClipsProgress} />}
+                  {mergeClipsError && <ErrorBar message={mergeClipsError} onRetry={() => void mergeAllClips()} />}
+                  {mergedClipsUrl && (
+                    <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: T.successInk }}>✓ All {videosReady} clips merged into one video</p>
+                      <video src={mergedClipsUrl} controls autoPlay loop playsInline style={{ borderRadius: 10, maxWidth: 260, border: `1px solid ${T.border}`, background: '#000' }} />
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <a href={mergedClipsUrl} download="tiktok-merged.mp4" style={{ fontSize: 12.5, padding: '6px 14px', borderRadius: 8, border: `1px solid ${T.border}`, background: T.card, color: T.ink2, textDecoration: 'none', fontWeight: 500 }}>Download</a>
+                        <button onClick={() => void mergeAllClips()} style={{ fontSize: 12.5, padding: '6px 14px', borderRadius: 8, border: `1px solid ${T.border}`, background: T.card, color: T.ink2, cursor: 'pointer', fontWeight: 500 }}>Re-merge</button>
+                      </div>
+                    </motion.div>
+                  )}
+                  {!mergedClipsUrl && !mergingClips && (
+                    <button onClick={() => void mergeAllClips()} style={{ alignSelf: 'flex-start', display:'inline-flex', alignItems:'center', gap:7, padding:'9px 18px', borderRadius:8, border:'none', background:T.accent, color:'#fff', fontSize:13.5, fontWeight:600, cursor:'pointer', boxShadow:'0 1px 2px rgba(245,158,11,0.4)' }}>
+                      ⚡ Merge All Clips
+                    </button>
+                  )}
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Final Export */}
+          <AnimatePresence>
+            {mergedClipsUrl && voiceUrl && (
+              <motion.div key="final-export" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <Card>
+                  <SecHead label="Final Export" />
+                  {!mergedVideoUrl && (
+                    <p style={{ margin: 0, fontSize: 13.5, color: T.ink2 }}>
+                      Combine the 6-scene video with your BM voiceover into one final MP4.
+                    </p>
+                  )}
+                  {!mergedVideoUrl && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                      <button
+                        onClick={merging ? undefined : () => void mergeFinalVideo()}
+                        disabled={merging}
+                        style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:9, border:'none', background: merging ? T.border : T.accent, color: merging ? T.ink2 : '#fff', fontSize:14, fontWeight:600, cursor: merging ? 'default' : 'pointer', opacity: merging ? 0.65 : 1, boxShadow: merging ? 'none' : '0 1px 2px rgba(245,158,11,0.4)' }}
+                      >
+                        {merging ? <><motion.span animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}}>⟳</motion.span> Merging…</> : <>⚡ Merge Audio + Video</>}
+                      </button>
+                      {!merging && <span style={{ fontSize: 12, color: T.ink3 }}>Runs in-browser via ffmpeg.wasm · no upload</span>}
+                    </div>
+                  )}
+                  {merging && mergeProgress && <ProgressBar message={mergeProgress} />}
+                  {mergeError && <ErrorBar message={mergeError} onRetry={() => void mergeFinalVideo()} />}
+                  <AnimatePresence>
+                    {mergedVideoUrl && (
+                      <motion.div key="result" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: T.successInk }}>✓ Final TikTok video with voiceover ready</p>
+                        <video src={mergedVideoUrl} controls autoPlay loop playsInline style={{ borderRadius: 10, maxWidth: 260, border: `1px solid ${T.border}`, background: '#000' }} />
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <a href={mergedVideoUrl} download="tiktok-final.mp4" style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12.5, padding:'7px 16px', borderRadius:8, border:'none', background:T.accent, color:'#fff', textDecoration:'none', fontWeight:600, boxShadow:'0 1px 2px rgba(245,158,11,0.4)' }}>⬇ Download Final MP4</a>
+                          <button onClick={() => { if (mergedVideoUrl) URL.revokeObjectURL(mergedVideoUrl); setMergedVideoUrl(null); setMergeError(null); }} style={{ fontSize:12.5, padding:'7px 14px', borderRadius:8, border:`1px solid ${T.border}`, background:T.card, color:T.ink2, cursor:'pointer', fontWeight:500 }}>Re-merge</button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+        </div>{/* end left col */}
+
+        {/* ── Right column ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Agent Status */}
+          <Card>
+            <SecHead
+              label="Agent Status"
+              right={`${[...Array(PIPELINE_AGENTS.length)].filter((_, i) => activeAgentIdx === i || doneUpTo >= i).length}/${PIPELINE_AGENTS.length} active`}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {PIPELINE_AGENTS.map((agent, i) => (
+                <AgentCard
+                  key={agent.name}
+                  emoji={agent.emoji}
+                  name={agent.name}
+                  role={agent.role}
+                  active={activeAgentIdx === i}
+                  done={doneUpTo >= i}
+                />
+              ))}
+            </div>
             {status === 'idle' && (
-              <p className="text-xs text-center pt-1" style={{ color: 'var(--theme-muted)' }}>
+              <p style={{ margin: 0, fontSize: 12.5, color: T.ink3, textAlign: 'center', paddingTop: 4 }}>
                 Press Run to start the pipeline
               </p>
             )}
-          </div>
-        </SectionCard>
-      </div>
+          </Card>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Row 2: Today's Product + Generated Script                          */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Voiceover */}
+          <AnimatePresence>
+            {(storyboard || script) && (
+              <motion.div key="voice" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <Card>
+                  <SecHead label="Voiceover (Bahasa Malaysia)" />
 
-        {/* Today's Product */}
-        <SectionCard title="Today's Product">
-          <AnimatePresence mode="wait">
-            {isRunning && !product ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col gap-3"
-              >
-                {['Product name', 'Price', 'Trend score', 'Viral reason'].map((lbl) => (
-                  <div key={lbl} className="flex flex-col gap-1">
-                    <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
-                      {lbl}
-                    </span>
-                    <motion.div
-                      className="h-4 rounded"
-                      style={{ background: 'var(--theme-border)', width: lbl === 'Viral reason' ? '100%' : '60%' }}
-                      animate={{ opacity: [0.4, 0.8, 0.4] }}
-                      transition={{ duration: 1.4, repeat: Infinity }}
-                    />
+                  {storyboard && (
+                    <div style={{ padding: '8px 12px', borderRadius: 8, fontSize: 12, lineHeight: 1.5, background: T.border, color: T.ink2 }}>
+                      {storyboard.map((s) => s.voiceover_text).join(' ')}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={voiceGenerating ? undefined : () => void generateVoice()}
+                      disabled={voiceGenerating}
+                      style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'8px 16px', borderRadius:8, border:'none', background: voiceGenerating ? T.border : '#0D9488', color: voiceGenerating ? T.ink2 : '#fff', fontSize:12.5, fontWeight:600, cursor: voiceGenerating ? 'default' : 'pointer', opacity: voiceGenerating ? 0.65 : 1 }}
+                    >
+                      {voiceGenerating ? <><motion.span animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}}>⟳</motion.span> Generating…</> : voiceUrl ? <>🎙️ Regenerate Voice</> : <>🎙️ Generate BM Voiceover</>}
+                    </button>
+                    {!voiceGenerating && (
+                      <span style={{ fontSize: 11, color: T.ink3 }}>Adam · ElevenLabs Turbo v2.5</span>
+                    )}
                   </div>
-                ))}
-              </motion.div>
-            ) : product ? (
-              <motion.div
-                key="data"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-3"
-              >
-                <Field label="Product Name" value={product.name} />
-                <Field label="Price" value={product.price} />
-                <TrendBar score={product.trendScore} />
-                <Field label="Why It's Going Viral" value={product.viralReason} />
-              </motion.div>
-            ) : (
-              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <p className="text-sm" style={{ color: 'var(--theme-muted)' }}>
-                  Run the pipeline to discover today's trending product.
-                </p>
+
+                  {voiceError && <ErrorBar message={voiceError} onRetry={() => void generateVoice()} />}
+
+                  <AnimatePresence>
+                    {voiceUrl && (
+                      <motion.div key="audio" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <audio src={voiceUrl} controls style={{ width: '100%', borderRadius: 8, accentColor: T.accent }} />
+                        <a href={voiceUrl} download="tiktok-voice.mp3" style={{ alignSelf: 'flex-start', fontSize: 11.5, padding: '4px 12px', borderRadius: 6, border: `1px solid ${T.border}`, background: T.card, color: T.ink2, textDecoration: 'none', fontWeight: 500 }}>Download MP3</a>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Card>
               </motion.div>
             )}
           </AnimatePresence>
-        </SectionCard>
 
-        {/* Generated Script */}
-        <SectionCard title="Generated Script">
-          <AnimatePresence mode="wait">
-            {isRunning && !script ? (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col gap-3"
-              >
-                {['Hook', 'Body', 'CTA'].map((lbl) => (
-                  <div key={lbl} className="flex flex-col gap-1">
-                    <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
-                      {lbl}
-                    </span>
-                    <motion.div
-                      className="h-4 rounded"
-                      style={{ background: 'var(--theme-border)', width: lbl === 'Body' ? '100%' : '75%' }}
-                      animate={{ opacity: [0.4, 0.8, 0.4] }}
-                      transition={{ duration: 1.4, repeat: Infinity, delay: 0.3 }}
-                    />
-                  </div>
-                ))}
-              </motion.div>
-            ) : script ? (
-              <motion.div
-                key="data"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-4"
-              >
-                <div className="flex flex-col gap-1">
-                  <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
-                    Hook
-                  </span>
-                  <div
-                    className="rounded-lg px-3 py-2 text-sm font-medium leading-snug"
-                    style={{
-                      background: 'rgba(0,255,65,0.07)',
-                      borderLeft: '3px solid var(--theme-accent)',
-                      color: 'var(--theme-text)',
-                    }}
-                  >
-                    {script.hook}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
-                    Body
-                  </span>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--theme-text)' }}>
-                    {script.body}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--theme-muted)' }}>
-                    CTA
-                  </span>
-                  <div
-                    className="rounded-lg px-3 py-2 text-sm font-medium"
-                    style={{
-                      background: 'rgba(245,158,11,0.1)',
-                      borderLeft: '3px solid #f59e0b',
-                      color: 'var(--theme-text)',
-                    }}
-                  >
-                    {script.cta}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(
-                        `HOOK:\n${script.hook}\n\nBODY:\n${script.body}\n\nCTA:\n${script.cta}`,
-                      )
-                    }
-                    className="text-xs rounded px-3 py-1.5 transition-all hover:brightness-110"
-                    style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                  >
-                    Copy Script
-                  </button>
-                  {!storyboard && (
-                    <motion.button
-                      onClick={storyboardGenerating ? undefined : generateStoryboard}
-                      disabled={storyboardGenerating}
-                      className={cn(
-                        'flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-semibold transition-all',
-                        storyboardGenerating
-                          ? 'cursor-not-allowed opacity-60'
-                          : 'cursor-pointer hover:brightness-110 active:scale-95',
-                      )}
-                      style={{
-                        background: storyboardGenerating ? 'var(--theme-border)' : '#7c3aed',
-                        color: '#fff',
-                      }}
-                      whileTap={storyboardGenerating ? {} : { scale: 0.97 }}
-                    >
-                      {storyboardGenerating ? (
-                        <>
-                          <motion.span
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                          >
-                            ⟳
-                          </motion.span>
-                          Generating Storyboard…
-                        </>
-                      ) : (
-                        <>🎞️ Generate Storyboard →</>
-                      )}
-                    </motion.button>
-                  )}
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <p className="text-sm" style={{ color: 'var(--theme-muted)' }}>
-                  CopywriterAgent will generate your hook, body, and CTA after the pipeline runs.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </SectionCard>
+        </div>{/* end right col */}
       </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Storyboard                                                          */}
-      {/* ------------------------------------------------------------------ */}
-      <AnimatePresence>
-        {(storyboard || storyboardGenerating) && (
-          <motion.div
-            key="storyboard-section"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            <SectionCard title="Storyboard">
-              <div className="flex flex-col gap-4">
-                {storyboardError && (
-                  <div
-                    className="rounded-lg px-3 py-2 text-xs"
-                    style={{ color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}
-                  >
-                    {storyboardError}
-                  </div>
-                )}
-
-                {storyboardGenerating && !storyboard && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <motion.div
-                        key={i}
-                        className="rounded-xl p-3 flex flex-col gap-2"
-                        style={{ background: 'var(--theme-border)', minHeight: 120 }}
-                        animate={{ opacity: [0.3, 0.7, 0.3] }}
-                        transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {storyboard && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {storyboard.map((scene) => (
-                        <motion.div
-                          key={scene.sceneNumber}
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: (scene.sceneNumber - 1) * 0.06 }}
-                          className="rounded-xl p-3 flex flex-col gap-2"
-                          style={{
-                            background: 'var(--theme-border)',
-                            border: '1px solid rgba(255,255,255,0.06)',
-                          }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                              style={{ background: 'var(--theme-accent)', color: '#000' }}
-                            >
-                              S{scene.sceneNumber}
-                            </span>
-                            <span
-                              className="text-[11px] font-medium rounded px-2 py-0.5"
-                              style={{ background: 'rgba(124,58,237,0.2)', color: '#a78bfa' }}
-                            >
-                              {scene.angle}
-                            </span>
-                          </div>
-                          <p className="text-xs leading-relaxed" style={{ color: 'var(--theme-text)' }}>
-                            {scene.action}
-                          </p>
-                          <div
-                            className="rounded-lg px-2 py-1.5 text-[10px] leading-relaxed"
-                            style={{ background: 'rgba(0,0,0,0.2)', color: 'var(--theme-muted)' }}
-                          >
-                            <span className="font-medium" style={{ color: '#7c3aed' }}>VO: </span>
-                            {scene.voiceover_text}
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center gap-3 pt-1">
-                      <motion.button
-                        onClick={storyboardGenerating ? undefined : generateStoryboard}
-                        disabled={storyboardGenerating}
-                        className="text-xs rounded px-3 py-1.5 transition-all hover:brightness-110"
-                        style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                      >
-                        Regenerate Storyboard
-                      </motion.button>
-                      {!sceneImages.some((s) => s.url || s.generating) && (
-                        <motion.button
-                          onClick={generateAllSceneImages}
-                          className="flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-semibold hover:brightness-110 active:scale-95 cursor-pointer transition-all"
-                          style={{ background: '#9333ea', color: '#fff' }}
-                          whileTap={{ scale: 0.97 }}
-                        >
-                          🎨 Generate All Images →
-                        </motion.button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            </SectionCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Scene Images Grid                                                   */}
-      {/* ------------------------------------------------------------------ */}
-      <AnimatePresence>
-        {sceneImages.some((s) => s.url || s.generating || s.error) && (
-          <motion.div
-            key="scene-images-section"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            <SectionCard title={`Scene Images (${imagesReady}/6)`}>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {sceneImages.map((imgState, idx) => {
-                  const scene = storyboard?.[idx]
-                  return (
-                    <div key={idx} className="flex flex-col gap-2">
-                      {/* Label */}
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                          style={{ background: 'var(--theme-accent)', color: '#000' }}
-                        >
-                          S{idx + 1}
-                        </span>
-                        {scene && (
-                          <span className="text-[10px]" style={{ color: 'var(--theme-muted)' }}>
-                            {scene.angle}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Image slot */}
-                      <div
-                        className="relative rounded-xl overflow-hidden"
-                        style={{
-                          aspectRatio: '3/4',
-                          background: 'var(--theme-border)',
-                          border: '1px solid var(--theme-border)',
-                        }}
-                      >
-                        {imgState.generating && !imgState.url && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <motion.span
-                              className="text-2xl"
-                              animate={{ opacity: [0.3, 0.9, 0.3] }}
-                              transition={{ duration: 1.5, repeat: Infinity }}
-                            >
-                              🎨
-                            </motion.span>
-                          </div>
-                        )}
-                        {imgState.url && (
-                          <img
-                            src={imgState.url}
-                            alt={`Scene ${idx + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                        {imgState.error && !imgState.url && (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-2">
-                            <span className="text-[10px] text-center" style={{ color: '#ff5f6d' }}>
-                              {imgState.error}
-                            </span>
-                            <button
-                              onClick={() =>
-                                scene && generateSingleSceneImage(idx, scene.image_prompt)
-                              }
-                              className="text-[10px] rounded px-2 py-1 hover:brightness-110"
-                              style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
-                            >
-                              Retry
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Per-scene regen button */}
-                      {imgState.url && (
-                        <button
-                          onClick={() =>
-                            scene && generateSingleSceneImage(idx, scene.image_prompt)
-                          }
-                          className="text-[10px] rounded px-2 py-1 hover:brightness-110 transition-all self-start"
-                          style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                        >
-                          Redo
-                        </button>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-
-              <div className="flex items-center gap-3 flex-wrap pt-1">
-                <motion.button
-                  onClick={sceneImages.some((s) => s.generating) ? undefined : generateAllSceneImages}
-                  disabled={sceneImages.some((s) => s.generating)}
-                  className={cn(
-                    'flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all',
-                    sceneImages.some((s) => s.generating)
-                      ? 'cursor-not-allowed opacity-60'
-                      : 'cursor-pointer hover:brightness-110 active:scale-95',
-                  )}
-                  style={{
-                    background: sceneImages.some((s) => s.generating)
-                      ? 'var(--theme-border)'
-                      : '#9333ea',
-                    color: sceneImages.some((s) => s.generating) ? 'var(--theme-muted)' : '#fff',
-                  }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  {sceneImages.some((s) => s.generating) ? (
-                    <>
-                      <motion.span
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      >
-                        ⟳
-                      </motion.span>
-                      Generating…
-                    </>
-                  ) : (
-                    <>🎨 {allImagesReady ? 'Regenerate All' : 'Generate All Images'}</>
-                  )}
-                </motion.button>
-
-                {allImagesReady && !sceneVideos.some((v) => v.url || v.generating) && (
-                  <motion.button
-                    onClick={generateAllSceneVideos}
-                    className="flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold hover:brightness-110 active:scale-95 cursor-pointer transition-all"
-                    style={{ background: '#e11d48', color: '#fff' }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    🎬 Generate All Videos →
-                  </motion.button>
-                )}
-              </div>
-            </SectionCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Scene Videos Grid                                                   */}
-      {/* ------------------------------------------------------------------ */}
-      <AnimatePresence>
-        {sceneVideos.some((v) => v.url || v.generating || v.error) && (
-          <motion.div
-            key="scene-videos-section"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            <SectionCard title={`Scene Videos (${videosReady}/6)`}>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {sceneVideos.map((vidState, idx) => {
-                  const scene = storyboard?.[idx]
-                  const imgUrl = sceneImages[idx]?.url
-                  return (
-                    <div key={idx} className="flex flex-col gap-2">
-                      {/* Label */}
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                          style={{ background: vidState.url ? '#22c55e' : 'var(--theme-accent)', color: '#000' }}
-                        >
-                          S{idx + 1}
-                        </span>
-                        {scene && (
-                          <span className="text-[10px]" style={{ color: 'var(--theme-muted)' }}>
-                            {scene.angle}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Video slot */}
-                      <div
-                        className="relative rounded-xl overflow-hidden"
-                        style={{
-                          aspectRatio: '9/16',
-                          background: '#000',
-                          border: '1px solid var(--theme-border)',
-                          maxHeight: 220,
-                        }}
-                      >
-                        {vidState.generating && !vidState.url && (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3">
-                            <motion.div
-                              className="w-2 h-2 rounded-full"
-                              style={{ background: '#e11d48' }}
-                              animate={{ opacity: [1, 0.2, 1] }}
-                              transition={{ duration: 0.9, repeat: Infinity }}
-                            />
-                            {vidState.progress && (
-                              <span
-                                className="text-[9px] text-center leading-relaxed"
-                                style={{ color: 'var(--theme-muted)' }}
-                              >
-                                {vidState.progress}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {vidState.url && (
-                          <video
-                            src={vidState.url}
-                            controls
-                            autoPlay
-                            loop
-                            playsInline
-                            muted
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                        {vidState.error && !vidState.url && (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-2">
-                            <span className="text-[9px] text-center" style={{ color: '#ff5f6d' }}>
-                              {vidState.error}
-                            </span>
-                            {imgUrl && scene && (
-                              <button
-                                onClick={() =>
-                                  generateSingleSceneVideo(idx, imgUrl, scene.action)
-                                }
-                                className="text-[10px] rounded px-2 py-1 hover:brightness-110"
-                                style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
-                              >
-                                Retry
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Per-scene redo */}
-                      {vidState.url && imgUrl && scene && (
-                        <button
-                          onClick={() => generateSingleSceneVideo(idx, imgUrl, scene.action)}
-                          className="text-[10px] rounded px-2 py-1 hover:brightness-110 transition-all self-start"
-                          style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                        >
-                          Redo
-                        </button>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-
-              <div className="flex items-center gap-3 flex-wrap pt-1">
-                <motion.button
-                  onClick={sceneVideos.some((v) => v.generating) ? undefined : generateAllSceneVideos}
-                  disabled={sceneVideos.some((v) => v.generating)}
-                  className={cn(
-                    'flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all',
-                    sceneVideos.some((v) => v.generating)
-                      ? 'cursor-not-allowed opacity-60'
-                      : 'cursor-pointer hover:brightness-110 active:scale-95',
-                  )}
-                  style={{
-                    background: sceneVideos.some((v) => v.generating) ? 'var(--theme-border)' : '#e11d48',
-                    color: sceneVideos.some((v) => v.generating) ? 'var(--theme-muted)' : '#fff',
-                  }}
-                  whileTap={{ scale: 0.97 }}
-                >
-                  {sceneVideos.some((v) => v.generating) ? (
-                    <>
-                      <motion.span
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      >
-                        ⟳
-                      </motion.span>
-                      {`Generating… (${videosReady}/6 done)`}
-                    </>
-                  ) : (
-                    <>🎬 {allVideosReady ? 'Regenerate All' : 'Generate All Videos'}</>
-                  )}
-                </motion.button>
-
-                {allVideosReady && !mergedClipsUrl && !mergingClips && (
-                  <motion.button
-                    onClick={mergeAllClips}
-                    className="flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold hover:brightness-110 active:scale-95 cursor-pointer transition-all"
-                    style={{ background: 'var(--theme-accent)', color: '#000' }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    ⚡ Merge All Clips →
-                  </motion.button>
-                )}
-              </div>
-            </SectionCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Merge All Clips                                                     */}
-      {/* ------------------------------------------------------------------ */}
-      <AnimatePresence>
-        {(mergingClips || mergedClipsUrl || mergeClipsError) && (
-          <motion.div
-            key="merge-clips-section"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            <SectionCard title="Merged Video">
-              <div className="flex flex-col gap-4">
-                {mergeClipsProgress && (
-                  <div
-                    className="flex items-center gap-3 rounded-lg px-4 py-3"
-                    style={{ background: 'rgba(0,255,65,0.06)', border: '1px solid var(--theme-border)' }}
-                  >
-                    <motion.div
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ background: 'var(--theme-accent)' }}
-                      animate={{ opacity: [1, 0.2, 1] }}
-                      transition={{ duration: 0.9, repeat: Infinity }}
-                    />
-                    <span className="text-xs font-mono" style={{ color: 'var(--theme-muted)' }}>
-                      {mergeClipsProgress}
-                    </span>
-                  </div>
-                )}
-
-                {mergeClipsError && (
-                  <div
-                    className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs"
-                    style={{ color: '#ff5f6d', background: 'rgba(255,95,109,0.1)' }}
-                  >
-                    <span>{mergeClipsError}</span>
-                    <button
-                      onClick={() => void mergeAllClips()}
-                      className="shrink-0 rounded px-2 py-1 font-medium hover:brightness-110"
-                      style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
-                    >
-                      Retry
-                    </button>
-                  </div>
-                )}
-
-                {mergedClipsUrl && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col gap-3"
-                  >
-                    <p className="text-xs font-semibold" style={{ color: '#22c55e' }}>
-                      ✓ All {videosReady} clips merged into one video
-                    </p>
-                    <video
-                      src={mergedClipsUrl}
-                      controls
-                      autoPlay
-                      loop
-                      playsInline
-                      className="rounded-xl"
-                      style={{ maxWidth: 280, border: '1px solid var(--theme-border)', background: '#000' }}
-                    />
-                    <div className="flex gap-2 flex-wrap">
-                      <a
-                        href={mergedClipsUrl}
-                        download="tiktok-merged.mp4"
-                        className="text-xs rounded px-3 py-1.5 hover:brightness-110 transition-all"
-                        style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                      >
-                        Download
-                      </a>
-                      <button
-                        onClick={() => void mergeAllClips()}
-                        className="text-xs rounded px-3 py-1.5 hover:brightness-110 transition-all"
-                        style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                      >
-                        Re-merge
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {!mergedClipsUrl && !mergingClips && (
-                  <motion.button
-                    onClick={mergeAllClips}
-                    className="self-start flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold hover:brightness-110 active:scale-95 cursor-pointer transition-all"
-                    style={{ background: 'var(--theme-accent)', color: '#000' }}
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    ⚡ Merge All Clips
-                  </motion.button>
-                )}
-              </div>
-            </SectionCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Voiceover                                                           */}
-      {/* ------------------------------------------------------------------ */}
-      <AnimatePresence>
-        {(storyboard || script) && (
-          <motion.div
-            key="voice-section"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            <SectionCard title="Voiceover (Bahasa Malaysia)">
-              <div className="flex flex-col gap-3">
-                {storyboard && (
-                  <div
-                    className="rounded-lg px-3 py-2 text-xs leading-relaxed"
-                    style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                  >
-                    {storyboard.map((s) => s.voiceover_text).join(' ')}
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 flex-wrap">
-                  <motion.button
-                    onClick={voiceGenerating ? undefined : generateVoice}
-                    disabled={voiceGenerating}
-                    className={cn(
-                      'flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all',
-                      voiceGenerating
-                        ? 'cursor-not-allowed opacity-60'
-                        : 'cursor-pointer hover:brightness-110 active:scale-95',
-                    )}
-                    style={{
-                      background: voiceGenerating ? 'var(--theme-border)' : '#0d9488',
-                      color: '#fff',
-                    }}
-                    whileTap={voiceGenerating ? {} : { scale: 0.97 }}
-                  >
-                    {voiceGenerating ? (
-                      <>
-                        <motion.span
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        >
-                          ⟳
-                        </motion.span>
-                        Generating…
-                      </>
-                    ) : voiceUrl ? (
-                      <>🎙️ Regenerate Voice</>
-                    ) : (
-                      <>🎙️ Generate BM Voiceover</>
-                    )}
-                  </motion.button>
-                  {!voiceGenerating && (
-                    <span className="text-[11px]" style={{ color: 'var(--theme-muted)' }}>
-                      Adam · ElevenLabs Turbo v2.5 · {storyboard ? '6-scene BM script' : 'full script'}
-                    </span>
-                  )}
-                </div>
-
-                {voiceError && (
-                  <div
-                    className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs"
-                    style={{ color: '#ff5f6d', background: 'rgba(255,95,109,0.1)' }}
-                  >
-                    <span>{voiceError}</span>
-                    <button
-                      onClick={() => void generateVoice()}
-                      className="shrink-0 rounded px-2 py-1 font-medium hover:brightness-110"
-                      style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
-                    >
-                      Retry
-                    </button>
-                  </div>
-                )}
-
-                <AnimatePresence>
-                  {voiceUrl && (
-                    <motion.div
-                      key="audio-player"
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="flex flex-col gap-2"
-                    >
-                      <audio
-                        src={voiceUrl}
-                        controls
-                        className="w-full rounded-lg"
-                        style={{ accentColor: 'var(--theme-accent)', maxWidth: 420 }}
-                      />
-                      <a
-                        href={voiceUrl}
-                        download="tiktok-voice.mp3"
-                        className="self-start text-[11px] rounded px-3 py-1 hover:brightness-110 transition-all"
-                        style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                      >
-                        Download MP3
-                      </a>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </SectionCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Final Export — merge voice with merged clips                       */}
-      {/* ------------------------------------------------------------------ */}
-      <AnimatePresence>
-        {mergedClipsUrl && voiceUrl && (
-          <motion.div
-            key="final-export-section"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-          >
-            <SectionCard title="Final Export">
-              <div className="flex flex-col gap-4">
-                {!mergedVideoUrl && (
-                  <p className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-                    Combine the 6-scene video with your BM voiceover into one final MP4.
-                  </p>
-                )}
-
-                {!mergedVideoUrl && (
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <motion.button
-                      onClick={merging ? undefined : mergeFinalVideo}
-                      disabled={merging}
-                      className={cn(
-                        'flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all',
-                        merging
-                          ? 'cursor-not-allowed opacity-60'
-                          : 'cursor-pointer hover:brightness-110 active:scale-95',
-                      )}
-                      style={{
-                        background: merging ? 'var(--theme-border)' : 'var(--theme-accent)',
-                        color: merging ? 'var(--theme-muted)' : '#000',
-                      }}
-                      whileTap={merging ? {} : { scale: 0.97 }}
-                    >
-                      {merging ? (
-                        <>
-                          <motion.span
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                          >
-                            ⟳
-                          </motion.span>
-                          Merging…
-                        </>
-                      ) : (
-                        <>⚡ Merge Audio + Video</>
-                      )}
-                    </motion.button>
-                    {!merging && (
-                      <span className="text-xs" style={{ color: 'var(--theme-muted)' }}>
-                        Runs in-browser via ffmpeg.wasm · no upload
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                <AnimatePresence>
-                  {merging && mergeProgress && (
-                    <motion.div
-                      key="merge-progress"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div
-                        className="flex items-center gap-3 rounded-lg px-4 py-3"
-                        style={{ background: 'rgba(0,255,65,0.06)', border: '1px solid var(--theme-border)' }}
-                      >
-                        <motion.div
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ background: 'var(--theme-accent)' }}
-                          animate={{ opacity: [1, 0.2, 1] }}
-                          transition={{ duration: 0.9, repeat: Infinity }}
-                        />
-                        <span className="text-xs font-mono" style={{ color: 'var(--theme-muted)' }}>
-                          {mergeProgress}
-                        </span>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {mergeError && (
-                  <div
-                    className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-xs"
-                    style={{ color: '#ff5f6d', background: 'rgba(255,95,109,0.1)' }}
-                  >
-                    <span>{mergeError}</span>
-                    <button
-                      onClick={() => void mergeFinalVideo()}
-                      className="shrink-0 rounded px-2 py-1 font-medium hover:brightness-110"
-                      style={{ background: 'rgba(255,95,109,0.2)', color: '#ff5f6d' }}
-                    >
-                      Retry
-                    </button>
-                  </div>
-                )}
-
-                <AnimatePresence>
-                  {mergedVideoUrl && (
-                    <motion.div
-                      key="merged-result"
-                      initial={{ opacity: 0, scale: 0.96 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3 }}
-                      className="flex flex-col gap-3"
-                    >
-                      <p className="text-xs font-semibold" style={{ color: '#22c55e' }}>
-                        ✓ Final TikTok video with voiceover ready
-                      </p>
-                      <video
-                        src={mergedVideoUrl}
-                        controls
-                        autoPlay
-                        loop
-                        playsInline
-                        className="rounded-xl"
-                        style={{ maxWidth: 280, border: '1px solid var(--theme-border)', background: '#000' }}
-                      />
-                      <div className="flex gap-2 flex-wrap">
-                        <a
-                          href={mergedVideoUrl}
-                          download="tiktok-final.mp4"
-                          className="text-xs rounded px-3 py-1.5 font-medium hover:brightness-110 transition-all"
-                          style={{ background: 'var(--theme-accent)', color: '#000' }}
-                        >
-                          ⬇ Download Final MP4
-                        </a>
-                        <button
-                          onClick={() => {
-                            if (mergedVideoUrl) URL.revokeObjectURL(mergedVideoUrl)
-                            setMergedVideoUrl(null)
-                            setMergeError(null)
-                          }}
-                          className="text-xs rounded px-3 py-1.5 hover:brightness-110 transition-all"
-                          style={{ background: 'var(--theme-border)', color: 'var(--theme-muted)' }}
-                        >
-                          Re-merge
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </SectionCard>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
     </div>
   )
 }
