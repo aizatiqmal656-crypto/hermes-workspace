@@ -1258,14 +1258,9 @@ export function TikTokScreen() {
                 })}
               </div>
             )}
-            {isDone && pipelineFinalVideo && (
-              <p style={{ margin: 0, fontSize: 12, color: T.successInk }}>
-                ✓ Final video merged: <code style={{ fontSize: 11, opacity: 0.8 }}>{pipelineFinalVideo}</code>
-              </p>
-            )}
-            {isDone && !storyboard && (
+            {isDone && (
               <p style={{ margin: 0, fontSize: 12.5, color: T.successInk }}>
-                ✓ Pipeline complete — generate storyboard below
+                ✓ Pipeline complete{pipelineFinalVideo ? ' — video ready below' : ' — see clips below'}
               </p>
             )}
 
@@ -1304,6 +1299,111 @@ export function TikTokScreen() {
               </div>
             </div>
           </Card>
+
+          {/* ── R6: Final TikTok Video ── */}
+          <AnimatePresence>
+            {isDone && sessionKey && (
+              <motion.div key="final-video-r6" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <Card>
+                  <SecHead label="Final TikTok Video" right="9:16 · ready to post" />
+
+                  {pipelineFinalVideo ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <p style={{ margin: 0, fontSize: 12.5, fontWeight: 600, color: T.successInk }}>
+                        ✓ Video merged — {videosReady} scenes combined
+                      </p>
+                      <div style={{ borderRadius: 12, overflow: 'hidden', background: '#000', maxWidth: 280, border: `1px solid ${T.border}`, boxShadow: T.shadowPop }}>
+                        <video
+                          src={`/api/tiktok-video/${sessionKey}`}
+                          controls
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          style={{ width: '100%', display: 'block' }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', gap: 14, fontSize: 12, color: T.ink3 }}>
+                        <span>~30s duration</span>
+                        <span>9:16 · MP4</span>
+                        <span>6 scenes</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                        <a
+                          href={`/api/tiktok-video/${sessionKey}?dl=1`}
+                          download
+                          style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'10px 20px', borderRadius:9, border:'none', background:T.accent, color:'#fff', textDecoration:'none', fontSize:14, fontWeight:600, boxShadow:'0 2px 8px rgba(245,158,11,.30)' }}
+                        >
+                          ⬇ Download TikTok Video
+                        </a>
+                        <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
+                          <button
+                            disabled
+                            title="TikTok Direct Upload API pending approval"
+                            style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'10px 18px', borderRadius:9, border:`1px solid ${T.border}`, background:T.bg, color:T.ink3, fontSize:13, fontWeight:600, cursor:'not-allowed', opacity:0.55 }}
+                          >
+                            🎵 Share to TikTok
+                          </button>
+                          <span style={{ fontSize:10, color:T.ink3 }}>API pending approval</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ padding:'10px 14px', borderRadius:8, background:T.accentSoft, border:`1px solid ${T.accentLine}`, fontSize:13, color:T.accentInk }}>
+                        Individual clips ready — install <code style={{ fontSize:12 }}>ffmpeg</code> on server for auto-merge
+                      </div>
+                      {sceneVideos.some((v) => v.url) && (
+                        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8 }}>
+                          {sceneVideos.map((v, idx) =>
+                            v.url ? (
+                              <div key={idx} style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                                <video src={v.url} controls muted playsInline style={{ width:'100%', borderRadius:8, border:`1px solid ${T.border}`, background:'#000' }} />
+                                <a href={v.url} download={`scene-${idx + 1}.mp4`} style={{ fontSize:10, padding:'3px 8px', borderRadius:6, border:`1px solid ${T.border}`, background:T.card, color:T.ink2, textDecoration:'none', fontWeight:500, textAlign:'center' }}>⬇ S{idx + 1}</a>
+                              </div>
+                            ) : null
+                          )}
+                        </div>
+                      )}
+                      <div style={{ fontSize:12, color:T.ink3, padding:'8px 12px', borderRadius:8, border:`1px solid ${T.border}`, background:T.bg }}>
+                        Manual merge: <code style={{ fontSize:11 }}>ffmpeg -f concat -safe 0 -i clips.txt -c copy merged.mp4</code>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cost breakdown */}
+                  {(() => {
+                    const imgAgent = pipelineAgents.find((a) => a.id === 'image-generator')
+                    const vidAgent = pipelineAgents.find((a) => a.id === 'video-generator')
+                    const copyAgent = pipelineAgents.find((a) => a.id === 'copywriter-agent')
+                    const promptAgent = pipelineAgents.find((a) => a.id === 'prompt-engineer')
+                    const imgCost = imgAgent?.costRm ?? sceneImages.filter((s) => s.url).length * 0.014
+                    const vidCost = vidAgent?.costRm ?? sceneVideos.filter((v) => v.url).length * 0.65
+                    const scriptCost = (copyAgent?.costRm ?? 0) + (promptAgent?.costRm ?? 0)
+                    const voiceCost = 0.05
+                    const total = pipelineCost > 0 ? pipelineCost : imgCost + vidCost + scriptCost + voiceCost
+                    return (
+                      <div style={{ borderTop:`1px solid ${T.border}`, paddingTop:14, display:'flex', flexDirection:'column', gap:8 }}>
+                        <SecLabel>Cost Breakdown</SecLabel>
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr auto', gap:'4px 16px', fontSize:12.5 }}>
+                          <span style={{ color:T.ink2 }}>Images (6 × RM0.014)</span>
+                          <span style={{ fontWeight:600, color:T.ink, textAlign:'right' }}>RM{imgCost.toFixed(3)}</span>
+                          <span style={{ color:T.ink2 }}>Videos (6 × RM0.65)</span>
+                          <span style={{ fontWeight:600, color:T.ink, textAlign:'right' }}>RM{vidCost.toFixed(2)}</span>
+                          <span style={{ color:T.ink2 }}>BM Voice (ElevenLabs)</span>
+                          <span style={{ fontWeight:600, color:T.ink, textAlign:'right' }}>RM{voiceCost.toFixed(2)}</span>
+                          <span style={{ color:T.ink2 }}>AI Scripts (Haiku)</span>
+                          <span style={{ fontWeight:600, color:T.ink, textAlign:'right' }}>{scriptCost > 0 ? `RM${scriptCost.toFixed(3)}` : 'RM0.10'}</span>
+                          <span style={{ color:T.ink, fontWeight:700, borderTop:`1px solid ${T.border}`, paddingTop:6 }}>Total this run</span>
+                          <span style={{ fontWeight:700, color:T.accent, textAlign:'right', borderTop:`1px solid ${T.border}`, paddingTop:6 }}>RM{total.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Generated Script */}
           <Card>
