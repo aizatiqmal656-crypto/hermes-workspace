@@ -1069,6 +1069,12 @@ function ChatSidebarComponent({
                 to: '/settings' as const,
                 active: pathname === '/settings',
               },
+              {
+                label: 'Conductor',
+                icon: Rocket01Icon,
+                to: '/conductor' as const,
+                active: pathname === '/conductor',
+              },
             ] as const
           ).map((item) => {
             const isActive = item.active
