@@ -122,6 +122,142 @@ Output format: Signal cards with: Market, Direction (YES/NO), Materiality (0-1),
   },
 }
 
+// ---------------------------------------------------------------------------
+// HermesTikTok conductor agents (Phase R2)
+//
+// These 8 presets back the Agents tab cards and the conductor-spawn API. Each
+// maps 1:1 to a real Hermes skill under the tiktok/ category and to a memory
+// namespace initialised by swarm-memory.ts. Kept separate from AGENT_PRESETS
+// above (which seeds the Operations localStorage) so neither breaks the other.
+// ---------------------------------------------------------------------------
+
+export type HermesTikTokAgentPreset = {
+  /** Unique agent id — matches the tiktok/ skill folder + skill `name`. */
+  id: string
+  /** Display name shown on the agent card. */
+  name: string
+  /** Subtitle role under the name. */
+  role: string
+  /** Matching Hermes skill name under the tiktok/ category. */
+  skill: string
+  /** Worker model used when spawning this agent. */
+  workerModel: string
+  /** Memory namespace this agent reads/writes (trailing slash, e.g. "products/"). */
+  memoryNamespace: string
+  /** Relevant toolsets granted to the agent on spawn. */
+  toolsets: Array<string>
+  /** Default goal template — {product} / {category} are substituted on spawn. */
+  goalTemplate: string
+  /** Emoji avatar for the card. */
+  avatar: string
+  /** Brand color for the card accent. */
+  color: string
+}
+
+export const HERMES_TIKTOK_AGENTS: Array<HermesTikTokAgentPreset> = [
+  {
+    id: 'content-boss',
+    name: 'ContentBoss',
+    role: 'Master Orchestrator',
+    skill: 'content-boss',
+    workerModel: 'anthropic/claude-haiku-4-5',
+    memoryNamespace: 'pipeline_runs/',
+    toolsets: ['orchestrator'],
+    goalTemplate: 'Run full TikTok affiliate pipeline for {product}',
+    avatar: '👑',
+    color: '#F59E0B',
+  },
+  {
+    id: 'trend-hunter',
+    name: 'TrendHunter',
+    role: 'Trend Scout',
+    skill: 'trend-hunter',
+    workerModel: 'anthropic/claude-haiku-4-5',
+    memoryNamespace: 'products/',
+    toolsets: ['web_search'],
+    goalTemplate: 'Find top 3 trending {category} products in Malaysia',
+    avatar: '🔍',
+    color: '#3B82F6',
+  },
+  {
+    id: 'copywriter-agent',
+    name: 'CopywriterAgent',
+    role: 'BM Scriptwriter',
+    skill: 'copywriter-agent',
+    workerModel: 'anthropic/claude-haiku-4-5',
+    memoryNamespace: 'scripts/',
+    toolsets: ['read_memory', 'write_memory'],
+    goalTemplate: 'Write viral BM TikTok script for {product}',
+    avatar: '✍️',
+    color: '#EC4899',
+  },
+  {
+    id: 'compliance-agent',
+    name: 'ComplianceAgent',
+    role: 'Compliance Guard',
+    skill: 'compliance-agent',
+    workerModel: 'anthropic/claude-haiku-4-5',
+    memoryNamespace: 'compliance/',
+    toolsets: ['read_memory', 'write_memory'],
+    goalTemplate: 'Check compliance for {script}',
+    avatar: '🛡️',
+    color: '#10B981',
+  },
+  {
+    id: 'prompt-engineer',
+    name: 'PromptEngineerAgent',
+    role: 'Prompt Engineer',
+    skill: 'prompt-engineer',
+    workerModel: 'anthropic/claude-haiku-4-5',
+    memoryNamespace: 'prompts/',
+    toolsets: ['read_memory', 'write_memory'],
+    goalTemplate: 'Generate 6 scene prompts for {product}',
+    avatar: '🎯',
+    color: '#8B5CF6',
+  },
+  {
+    id: 'image-generator',
+    name: 'ImageGeneratorAgent',
+    role: 'Image Generator',
+    skill: 'image-generator',
+    workerModel: 'anthropic/claude-haiku-4-5',
+    memoryNamespace: 'images/',
+    toolsets: ['fal_flux'],
+    goalTemplate: 'Generate 6 scene images for {product}',
+    avatar: '🎨',
+    color: '#F97316',
+  },
+  {
+    id: 'video-generator',
+    name: 'VideoGeneratorAgent',
+    role: 'Video Generator',
+    skill: 'video-generator',
+    workerModel: 'anthropic/claude-haiku-4-5',
+    memoryNamespace: 'videos/',
+    toolsets: ['fal_kling', 'ffmpeg', 'elevenlabs'],
+    goalTemplate: 'Generate and merge 6 videos for {product}',
+    avatar: '🎬',
+    color: '#EF4444',
+  },
+  {
+    id: 'analytics-agent',
+    name: 'AnalyticsAgent',
+    role: 'Analytics',
+    skill: 'analytics-agent',
+    workerModel: 'anthropic/claude-haiku-4-5',
+    memoryNamespace: 'winning_patterns/',
+    toolsets: ['read_memory', 'write_memory'],
+    goalTemplate: 'Log pipeline run and update winning patterns',
+    avatar: '📊',
+    color: '#14B8A6',
+  },
+]
+
+/** Look up a HermesTikTok agent preset by id. */
+export function getHermesTikTokAgent(id: string): HermesTikTokAgentPreset | undefined {
+  return HERMES_TIKTOK_AGENTS.find((agent) => agent.id === id)
+}
+
 /**
  * Seed localStorage with preset metadata for agents that don't have any yet.
  */

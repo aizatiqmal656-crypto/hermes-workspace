@@ -12,9 +12,13 @@ import { getSwarmProfilePath } from '../../server/swarm-foundation'
 import { readWorkerMessages } from '../../server/swarm-chat-reader'
 import { newestCheckpointFromMessages } from '../../server/swarm-checkpoints'
 import { checkpointFromRuntimeSnapshot, dispatchSwarmAssignments, readRuntimeCheckpointSnapshot, runtimeCheckpointSignature } from './swarm-dispatch'
+import { ensureTikTokMemoryNamespace, ensureTikTokMemoryNamespaces, tiktokMemoryNamespaceRoot } from '../../server/swarm-memory'
+import { getHermesTikTokAgent } from '../../screens/agents/agent-presets'
+import type { HermesTikTokAgentPreset } from '../../screens/agents/agent-presets'
 import type { SwarmMission } from '../../server/swarm-missions'
 
 let cachedSkill: string | null = null
+const cachedAgentSkills = new Map<string, string>()
 
 export const NATIVE_CONDUCTOR_MODE_NOTE = 'Native-swarm is the official Workspace-native Swarm fallback when the dashboard Conductor API is unavailable.'
 
@@ -25,6 +29,11 @@ type ConductorSpawnBody = {
   projectsDir?: unknown
   maxParallel?: unknown
   supervised?: unknown
+  // Phase R2 — spawn a specific HermesTikTok agent by id.
+  agentId?: unknown
+  product?: unknown
+  category?: unknown
+  script?: unknown
 }
 
 function repoRoot(): string {
@@ -53,6 +62,90 @@ function loadDispatchSkill(): string {
   }
   cachedSkill = ''
   return cachedSkill
+}
+
+/**
+ * Load a HermesTikTok skill body (SKILL.md) by skill name from the tiktok/
+ * category. Mirrors loadDispatchSkill's fallback-chain pattern. Cached per skill.
+ */
+function loadTikTokSkill(skill: string): string {
+  if (!/^[a-z0-9][a-z0-9_-]{0,63}$/i.test(skill)) return ''
+  const cached = cachedAgentSkills.get(skill)
+  if (cached !== undefined) return cached
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? ''
+  const rel = `tiktok/${skill}/SKILL.md`
+  const candidates = [
+    resolve(repoRoot(), '.claude/skills', rel),
+    resolve(process.cwd(), '.claude/skills', rel),
+    ...(home ? [resolve(home, 'AppData/Local/hermes/skills', rel)] : []),
+    ...(home ? [resolve(home, '.hermes/skills', rel)] : []),
+  ]
+  for (const p of candidates) {
+    try {
+      const body = readFileSync(p, 'utf-8')
+      cachedAgentSkills.set(skill, body)
+      return body
+    } catch {}
+  }
+  cachedAgentSkills.set(skill, '')
+  return ''
+}
+
+/**
+ * Build the goal for an agent spawn. If an explicit goal is supplied it wins;
+ * otherwise the preset's goalTemplate is filled with the provided
+ * product/category/script context (with sensible fallbacks).
+ */
+function buildAgentGoal(
+  agent: HermesTikTokAgentPreset,
+  explicitGoal: string,
+  context: { product: string; category: string; script: string },
+): string {
+  if (explicitGoal) return explicitGoal
+  return agent.goalTemplate
+    .replace(/\{product\}/g, context.product || 'the selected product')
+    .replace(/\{category\}/g, context.category || 'health & beauty')
+    .replace(/\{script\}/g, context.script || 'the current script')
+}
+
+/**
+ * Build the orchestrator prompt for a single named HermesTikTok agent, injecting
+ * its skill instructions and memory-namespace context before the goal.
+ */
+function buildAgentSpawnPrompt(input: {
+  agent: HermesTikTokAgentPreset
+  goal: string
+  skillBody: string
+  memoryNamespacePath: string
+}): string {
+  const { agent, goal, skillBody, memoryNamespacePath } = input
+  return [
+    `You are ${agent.name}, the ${agent.role} in the HermesTikTok pipeline.`,
+    '',
+    '## Skill Instructions',
+    '',
+    skillBody || `(tiktok/${agent.skill} skill not found locally; proceed from your role description.)`,
+    '',
+    '## Memory Namespace',
+    '',
+    `Read and write your durable state under: ${memoryNamespacePath}`,
+    `Namespace: ${agent.memoryNamespace}`,
+    'Read upstream namespaces before acting; write your outputs before reporting.',
+    '',
+    '## Granted Toolsets',
+    '',
+    agent.toolsets.join(', ') || 'none',
+    '',
+    '## Goal',
+    '',
+    goal,
+    '',
+    '## Rules',
+    `- Use model ${agent.workerModel} for this work.`,
+    '- Do NOT ask for confirmation — start immediately.',
+    '- Write your outputs to the memory namespace above before reporting.',
+    '- Report a concise summary when done.',
+  ].join('\n')
 }
 
 function readOptionalString(value: unknown): string {
@@ -330,6 +423,42 @@ function createNativeConductorMission(input: {
   return { missionId: input.missionName, missionTitle, assignments }
 }
 
+/**
+ * Native-swarm dispatch for a single named HermesTikTok agent. Unlike the
+ * generic conductor fallback, this dispatches exactly one worker (the agent)
+ * carrying the agent's pre-built prompt (skill + memory context + goal).
+ */
+function createNativeAgentMission(input: {
+  agent: HermesTikTokAgentPreset
+  prompt: string
+  goal: string
+  missionName: string
+}) {
+  const assignments: Array<NativeConductorAssignment> = [
+    {
+      workerId: input.agent.id,
+      task: input.prompt,
+      rationale: `${input.agent.name} — ${input.agent.role}`,
+      reviewRequired: false,
+      direct: true,
+    },
+  ]
+  const missionTitle = `Agent: ${input.agent.name} — ${clipText(input.goal, 100)}`
+  void dispatchSwarmAssignments({
+    assignments,
+    missionId: input.missionName,
+    missionTitle,
+    allowAsync: true,
+    waitForCheckpoint: false,
+    timeoutSeconds: 600,
+    checkpointPollSeconds: 10,
+    notifySessionKey: 'main',
+  }).catch((error) => {
+    console.error('[conductor] native agent dispatch failed:', error instanceof Error ? error.message : String(error))
+  })
+  return { missionId: input.missionName, missionTitle, assignments }
+}
+
 export const Route = createFileRoute('/api/conductor-spawn')({
   server: {
     handlers: {
@@ -415,14 +544,30 @@ export const Route = createFileRoute('/api/conductor-spawn')({
 
         try {
           const body = (await request.json().catch(() => ({}))) as ConductorSpawnBody
-          const rawGoal = readOptionalString(body.goal)
-          const goalSanitization = sanitizeConductorMissionGoal(rawGoal)
-          const goal = goalSanitization.goal
           const orchestratorModel = readOptionalString(body.orchestratorModel)
-          const workerModel = readOptionalString(body.workerModel)
           const projectsDir = readOptionalString(body.projectsDir)
           const maxParallel = readMaxParallel(body.maxParallel)
           const supervised = body.supervised === true
+
+          // ── Phase R2: optional single HermesTikTok agent spawn ───────────
+          const agentId = readOptionalString(body.agentId)
+          const agent = agentId ? getHermesTikTokAgent(agentId) : undefined
+          if (agentId && !agent) {
+            return json({ ok: false, error: `Unknown agentId: ${agentId}` }, { status: 400 })
+          }
+
+          const explicitGoal = readOptionalString(body.goal)
+          const rawGoal = agent
+            ? buildAgentGoal(agent, explicitGoal, {
+                product: readOptionalString(body.product),
+                category: readOptionalString(body.category),
+                script: readOptionalString(body.script),
+              })
+            : explicitGoal
+          const goalSanitization = sanitizeConductorMissionGoal(rawGoal)
+          const goal = goalSanitization.goal
+          // Agent presets carry their own worker model; an explicit body value wins.
+          const workerModel = readOptionalString(body.workerModel) || (agent?.workerModel ?? '')
           if (!goal) {
             return json(
               {
@@ -436,29 +581,63 @@ export const Route = createFileRoute('/api/conductor-spawn')({
             )
           }
 
-          const prompt = buildOrchestratorPrompt(goal, loadDispatchSkill(), {
-            orchestratorModel,
-            workerModel,
-            projectsDir,
-            maxParallel,
-            supervised,
-          })
+          // For agent spawns, initialise all 8 namespaces and resolve this
+          // agent's namespace path so it can be injected into the prompt.
+          let agentMeta: Record<string, unknown> | null = null
+          let memoryNamespacePath = ''
+          if (agent) {
+            try {
+              ensureTikTokMemoryNamespaces()
+              memoryNamespacePath = ensureTikTokMemoryNamespace(agent.memoryNamespace)
+            } catch (memErr) {
+              memoryNamespacePath = tiktokMemoryNamespaceRoot(agent.memoryNamespace)
+              console.warn('[conductor] tiktok memory init failed:', memErr instanceof Error ? memErr.message : String(memErr))
+            }
+            agentMeta = {
+              id: agent.id,
+              name: agent.name,
+              role: agent.role,
+              skill: agent.skill,
+              workerModel: agent.workerModel,
+              memoryNamespace: agent.memoryNamespace,
+              memoryPath: memoryNamespacePath,
+              toolsets: agent.toolsets,
+            }
+          }
+
+          const prompt = agent
+            ? buildAgentSpawnPrompt({
+                agent,
+                goal,
+                skillBody: loadTikTokSkill(agent.skill),
+                memoryNamespacePath,
+              })
+            : buildOrchestratorPrompt(goal, loadDispatchSkill(), {
+                orchestratorModel,
+                workerModel,
+                projectsDir,
+                maxParallel,
+                supervised,
+              })
           const missionName = `conductor-${Date.now()}`
           const capabilities = await ensureGatewayProbed()
 
           if (!capabilities.dashboard.available || !capabilities.conductor) {
-            const native = createNativeConductorMission({
-              goal,
-              missionName,
-              maxParallel,
-              supervised,
-            })
+            const native = agent
+              ? createNativeAgentMission({ agent, prompt, goal, missionName })
+              : createNativeConductorMission({
+                  goal,
+                  missionName,
+                  maxParallel,
+                  supervised,
+                })
             return json({
               ok: true,
               mode: 'native-swarm',
               modeOfficialOotb: true,
               modeNote: NATIVE_CONDUCTOR_MODE_NOTE,
               prompt: null,
+              agent: agentMeta,
               missionId: native.missionId,
               sessionKey: null,
               sessionKeyPrefix: null,
@@ -478,6 +657,7 @@ export const Route = createFileRoute('/api/conductor-spawn')({
             ok: true,
             mode: 'dashboard',
             prompt: null,
+            agent: agentMeta,
             missionId,
             sessionKey: result.sessionKey ?? null,
             sessionKeyPrefix: (result as Record<string, unknown>).sessionKeyPrefix ?? null,

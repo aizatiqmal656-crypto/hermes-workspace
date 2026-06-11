@@ -56,6 +56,73 @@ export const SWARM_SHARED_HANDOFF_ROOT = join(SWARM_MEMORY_HANDOFFS, 'handoffs',
 export const SWARM_RUNTIME_ROOT = join(SWARM_CANONICAL_REPO, '.runtime')
 export const SWARM_PROJECT_CONTEXT_PATH = join(SWARM_SHARED_MEMORY_ROOT, 'PROJECT.md')
 
+// ---------------------------------------------------------------------------
+// HermesTikTok memory namespaces (Phase R2)
+//
+// The 8 HermesTikTok conductor agents each read/write a shared memory
+// namespace. These live under a dedicated tiktok/ root so the pipeline's
+// product/script/compliance/etc. state is isolated from generic swarm memory
+// but still uses the same atomic-write + scaffold discipline.
+// ---------------------------------------------------------------------------
+
+export const TIKTOK_MEMORY_ROOT = join(SWARM_SHARED_MEMORY_ROOT, 'tiktok')
+
+/** The 8 namespaces, in pipeline order, each owned by one agent. */
+export const TIKTOK_MEMORY_NAMESPACES = [
+  'products',         // TrendHunter findings
+  'scripts',          // CopywriterAgent outputs
+  'compliance',       // ComplianceAgent history
+  'prompts',          // PromptEngineerAgent outputs
+  'images',           // ImageGeneratorAgent URLs
+  'videos',           // VideoGeneratorAgent URLs
+  'pipeline_runs',    // ContentBoss mission logs
+  'winning_patterns', // AnalyticsAgent insights
+] as const
+
+export type TikTokMemoryNamespace = (typeof TIKTOK_MEMORY_NAMESPACES)[number]
+
+/** Normalise a namespace value ("products/" or "products") to a bare dir name. */
+function normalizeTikTokNamespace(namespace: string): string {
+  const trimmed = namespace.trim().replace(/\/+$/, '')
+  if (!/^[a-z0-9][a-z0-9_-]{0,63}$/i.test(trimmed)) {
+    throw new Error(`Invalid TikTok memory namespace: ${namespace}`)
+  }
+  return trimmed
+}
+
+/** Absolute path to a single TikTok memory namespace directory. */
+export function tiktokMemoryNamespaceRoot(namespace: string): string {
+  return join(TIKTOK_MEMORY_ROOT, normalizeTikTokNamespace(namespace))
+}
+
+/**
+ * Ensure a single TikTok memory namespace exists with a README scaffold.
+ * Idempotent — safe to call on every spawn. Returns the namespace dir path.
+ */
+export function ensureTikTokMemoryNamespace(namespace: string): string {
+  const dir = tiktokMemoryNamespaceRoot(namespace)
+  ensureDir(dir)
+  const readme = join(dir, 'README.md')
+  if (!existsSync(readme)) {
+    atomicWrite(readme, [
+      markdownHeader(`HermesTikTok memory — ${normalizeTikTokNamespace(namespace)}/`),
+      'Shared memory namespace for the HermesTikTok pipeline.\n\n',
+      'Agents write structured entries here (one file or JSONL per run).\n',
+      `Created: ${new Date().toISOString()}\n`,
+    ].join(''))
+  }
+  return dir
+}
+
+/**
+ * Initialise all 8 HermesTikTok memory namespaces. Called by conductor-spawn
+ * before dispatching an agent so every namespace exists up front.
+ */
+export function ensureTikTokMemoryNamespaces(): Array<string> {
+  ensureDir(TIKTOK_MEMORY_ROOT)
+  return TIKTOK_MEMORY_NAMESPACES.map((ns) => ensureTikTokMemoryNamespace(ns))
+}
+
 function profileRoot(workerId: string): string {
   return join(homedir(), '.hermes', 'profiles', workerId)
 }

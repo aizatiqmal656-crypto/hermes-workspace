@@ -1,3 +1,7 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { HERMES_TIKTOK_AGENTS } from './agent-presets'
+import type { HermesTikTokAgentPreset } from './agent-presets'
+
 // Design tokens — identical to tiktok-screen.tsx for visual consistency
 const T = {
   bg:           '#FAFAF9',
@@ -14,96 +18,38 @@ const T = {
   shadow:       '0 1px 3px rgba(17,17,17,0.05), 0 1px 2px rgba(17,17,17,0.03)',
 }
 
-interface AgentDef {
-  initials: string
-  name: string
-  role: string
-  activity: string
-  avatarColor: string
-  healthColor: string
-  healthColorSoft: string
+// ---------------------------------------------------------------------------
+// Runtime status model
+// ---------------------------------------------------------------------------
+
+type AgentStatus = 'idle' | 'spawning' | 'running' | 'completed' | 'failed'
+
+interface AgentRuntime {
+  status: AgentStatus
+  missionId: string | null
+  note: string
 }
 
-const AGENTS: AgentDef[] = [
-  {
-    initials: 'CB',
-    name: 'ContentBoss',
-    role: 'Master Orchestrator',
-    activity: 'Coordinated 0 runs',
-    avatarColor: '#F59E0B',
-    healthColor: '#F59E0B',
-    healthColorSoft: '#FEF3E2',
-  },
-  {
-    initials: 'TH',
-    name: 'TrendHunter',
-    role: 'Trend Scout',
-    activity: 'Scanned 0 products',
-    avatarColor: '#3B82F6',
-    healthColor: '#3B82F6',
-    healthColorSoft: '#EFF6FF',
-  },
-  {
-    initials: 'CW',
-    name: 'CopywriterAgent',
-    role: 'BM Scriptwriter',
-    activity: 'Wrote 0 scripts',
-    avatarColor: '#EC4899',
-    healthColor: '#EC4899',
-    healthColorSoft: '#FDF2F8',
-  },
-  {
-    initials: 'CG',
-    name: 'ComplianceAgent',
-    role: 'Compliance Guard',
-    activity: '0 violations flagged',
-    avatarColor: '#10B981',
-    healthColor: '#10B981',
-    healthColorSoft: '#ECFDF5',
-  },
-  {
-    initials: 'PE',
-    name: 'PromptEngineerAgent',
-    role: 'Prompt Engineer',
-    activity: 'Tuned 0 prompts',
-    avatarColor: '#8B5CF6',
-    healthColor: '#8B5CF6',
-    healthColorSoft: '#F5F3FF',
-  },
-  {
-    initials: 'IG',
-    name: 'ImageGeneratorAgent',
-    role: 'Image Generator',
-    activity: 'Rendered 0 frames',
-    avatarColor: '#F97316',
-    healthColor: '#F97316',
-    healthColorSoft: '#FFF7ED',
-  },
-  {
-    initials: 'VG',
-    name: 'VideoGeneratorAgent',
-    role: 'Video Generator',
-    activity: 'Generated 0 videos',
-    avatarColor: '#EF4444',
-    healthColor: '#EF4444',
-    healthColorSoft: '#FEF2F2',
-  },
-  {
-    initials: 'AN',
-    name: 'AnalyticsAgent',
-    role: 'Analytics',
-    activity: 'Tracked 0 videos',
-    avatarColor: '#14B8A6',
-    healthColor: '#14B8A6',
-    healthColorSoft: '#F0FDFA',
-  },
-]
+const STATUS_META: Record<AgentStatus, { label: string; color: string; soft: string }> = {
+  idle:      { label: 'Idle',      color: '#9A9A96', soft: '#F4F4F2' },
+  spawning:  { label: 'Spawning',  color: '#B45309', soft: '#FEF3E2' },
+  running:   { label: 'Running',   color: '#4338CA', soft: '#EEF0FE' },
+  completed: { label: 'Completed', color: '#047857', soft: '#ECFDF5' },
+  failed:    { label: 'Failed',    color: '#B91C1C', soft: '#FEF2F2' },
+}
 
-const STATS = [
-  { label: 'Total Agents', value: '8', sub: 'All operational', subColor: T.success },
-  { label: 'Running Now',  value: '0', sub: 'All idle',         subColor: T.ink3  },
-  { label: 'Completed Today', value: '0', sub: 'of 8 agents',   subColor: T.ink3  },
-]
+function initialsFor(name: string): string {
+  const caps = name.replace(/[^A-Z]/g, '')
+  if (caps.length >= 2) return caps.slice(0, 2)
+  return name.slice(0, 2).toUpperCase()
+}
+
+function mapMissionStatus(raw: unknown): AgentStatus {
+  const status = typeof raw === 'string' ? raw.toLowerCase() : ''
+  if (status === 'completed') return 'completed'
+  if (status === 'failed' || status === 'cancelled') return 'failed'
+  return 'running'
+}
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -171,7 +117,52 @@ function StatCard({
   )
 }
 
-function AgentCard({ agent }: { agent: AgentDef }) {
+function StatusBadge({ status }: { status: AgentStatus }) {
+  const meta = STATUS_META[status]
+  const pulsing = status === 'spawning' || status === 'running'
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        padding: '3px 8px',
+        borderRadius: 999,
+        background: meta.soft,
+        border: `1px solid ${T.border}`,
+        fontSize: 11,
+        fontWeight: 600,
+        color: meta.color,
+        flexShrink: 0,
+        whiteSpace: 'nowrap' as const,
+      }}
+    >
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: meta.color,
+          display: 'inline-block',
+          flexShrink: 0,
+          animation: pulsing ? 'hxPulse 1.2s ease-in-out infinite' : undefined,
+        }}
+      />
+      {meta.label}
+    </div>
+  )
+}
+
+function AgentCard({
+  agent,
+  runtime,
+  onSpawn,
+}: {
+  agent: HermesTikTokAgentPreset
+  runtime: AgentRuntime
+  onSpawn: (agent: HermesTikTokAgentPreset) => void
+}) {
+  const busy = runtime.status === 'spawning' || runtime.status === 'running'
   return (
     <Card style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Top row */}
@@ -182,7 +173,7 @@ function AgentCard({ agent }: { agent: AgentDef }) {
             width: 44,
             height: 44,
             borderRadius: 10,
-            background: agent.avatarColor,
+            background: agent.color,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -194,7 +185,7 @@ function AgentCard({ agent }: { agent: AgentDef }) {
             userSelect: 'none' as const,
           }}
         >
-          {agent.initials}
+          {initialsFor(agent.name)}
         </div>
         {/* Name + role */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -209,85 +200,51 @@ function AgentCard({ agent }: { agent: AgentDef }) {
               textOverflow: 'ellipsis',
             }}
           >
-            {agent.name}
+            {agent.avatar} {agent.name}
           </div>
           <div style={{ fontSize: 12, color: T.ink2, marginTop: 2, lineHeight: 1.3 }}>
             {agent.role}
           </div>
         </div>
-        {/* Idle status badge */}
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '3px 8px',
-            borderRadius: 999,
-            background: '#F4F4F2',
-            border: `1px solid ${T.border}`,
-            fontSize: 11,
-            fontWeight: 600,
-            color: T.ink3,
-            flexShrink: 0,
-            whiteSpace: 'nowrap' as const,
-          }}
-        >
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              background: T.ink3,
-              display: 'inline-block',
-              flexShrink: 0,
-            }}
-          />
-          Idle
-        </div>
+        <StatusBadge status={runtime.status} />
       </div>
 
       {/* Divider */}
       <div style={{ borderTop: `1px solid ${T.border}`, margin: '0 -1px' }} />
 
-      {/* Activity */}
-      <div style={{ fontSize: 12.5, color: T.ink2 }}>{agent.activity}</div>
-
-      {/* Health bar */}
-      <div>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 6,
-          }}
-        >
-          <SecLabel>Health</SecLabel>
-          <span
-            style={{ fontSize: 11, fontWeight: 600, color: agent.healthColor }}
-          >
-            100%
-          </span>
+      {/* Memory namespace + note */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ fontSize: 12, color: T.ink2 }}>
+          <span style={{ color: T.ink3 }}>memory:</span>{' '}
+          <code style={{ fontSize: 11.5, color: agent.color }}>{agent.memoryNamespace}</code>
         </div>
-        <div
-          style={{
-            width: '100%',
-            height: 5,
-            borderRadius: 999,
-            background: agent.healthColorSoft,
-            overflow: 'hidden',
-          }}
-        >
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-              borderRadius: 999,
-              background: agent.healthColor,
-            }}
-          />
+        <div style={{ fontSize: 12, color: T.ink3, minHeight: 16 }}>
+          {runtime.note || `tools: ${agent.toolsets.join(', ')}`}
         </div>
       </div>
+
+      {/* Spawn button */}
+      <button
+        onClick={() => onSpawn(agent)}
+        disabled={busy}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 6,
+          padding: '8px 14px',
+          borderRadius: 8,
+          border: 'none',
+          background: busy ? '#F4F4F2' : agent.color,
+          color: busy ? T.ink3 : '#fff',
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: busy ? 'not-allowed' : 'pointer',
+          transition: 'filter 0.15s',
+        }}
+      >
+        {busy ? 'Working…' : '▶ Spawn Agent'}
+      </button>
     </Card>
   )
 }
@@ -297,6 +254,103 @@ function AgentCard({ agent }: { agent: AgentDef }) {
 // ---------------------------------------------------------------------------
 
 export function HermesAgentsScreen() {
+  const [product, setProduct] = useState('AeroGlow LED Face Mask')
+  const [runtimes, setRuntimes] = useState<Record<string, AgentRuntime>>(() =>
+    Object.fromEntries(
+      HERMES_TIKTOK_AGENTS.map((a) => [a.id, { status: 'idle', missionId: null, note: '' }]),
+    ),
+  )
+
+  // Keep a live ref so async poll loops don't write after unmount.
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  const setRuntime = useCallback((agentId: string, patch: Partial<AgentRuntime>) => {
+    if (!mountedRef.current) return
+    setRuntimes((prev) => ({ ...prev, [agentId]: { ...prev[agentId], ...patch } }))
+  }, [])
+
+  const pollMission = useCallback(
+    async (agentId: string, missionId: string) => {
+      for (let i = 0; i < 100 && mountedRef.current; i++) {
+        await new Promise((r) => setTimeout(r, 3000))
+        if (!mountedRef.current) return
+        try {
+          const res = await fetch(
+            `/api/conductor-spawn?missionId=${encodeURIComponent(missionId)}&lines=20`,
+            { credentials: 'same-origin' },
+          )
+          const data = (await res.json().catch(() => ({}))) as {
+            ok?: boolean
+            mission?: { status?: unknown }
+          }
+          if (!res.ok || !data.ok) continue
+          const status = mapMissionStatus(data.mission?.status)
+          if (status === 'completed') {
+            setRuntime(agentId, { status: 'completed', note: 'Mission completed ✓' })
+            return
+          }
+          if (status === 'failed') {
+            setRuntime(agentId, { status: 'failed', note: 'Mission failed — click to retry' })
+            return
+          }
+          setRuntime(agentId, { status: 'running', note: 'Running mission…' })
+        } catch {
+          // transient network error — keep polling
+        }
+      }
+    },
+    [setRuntime],
+  )
+
+  const handleSpawn = useCallback(
+    async (agent: HermesTikTokAgentPreset) => {
+      setRuntime(agent.id, { status: 'spawning', note: 'Spawning agent…', missionId: null })
+      try {
+        const res = await fetch('/api/conductor-spawn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ agentId: agent.id, product }),
+        })
+        const data = (await res.json().catch(() => ({}))) as {
+          ok?: boolean
+          error?: string
+          missionId?: string
+        }
+        if (!res.ok || !data.ok || !data.missionId) {
+          setRuntime(agent.id, {
+            status: 'failed',
+            note: data.error ? data.error.slice(0, 80) : 'Spawn failed — click to retry',
+          })
+          return
+        }
+        setRuntime(agent.id, {
+          status: 'running',
+          missionId: data.missionId,
+          note: 'Mission dispatched…',
+        })
+        void pollMission(agent.id, data.missionId)
+      } catch (err) {
+        setRuntime(agent.id, {
+          status: 'failed',
+          note: err instanceof Error ? err.message.slice(0, 80) : 'Spawn failed — click to retry',
+        })
+      }
+    },
+    [product, setRuntime, pollMission],
+  )
+
+  const runningCount = Object.values(runtimes).filter(
+    (r) => r.status === 'running' || r.status === 'spawning',
+  ).length
+  const completedCount = Object.values(runtimes).filter((r) => r.status === 'completed').length
+
   return (
     <div
       style={{
@@ -310,13 +364,15 @@ export function HermesAgentsScreen() {
         lineHeight: 1.5,
       }}
     >
+      <style>{`@keyframes hxPulse { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }`}</style>
+
       {/* ── Page header ──────────────────────────────────────────────── */}
       <div
         style={{
           display: 'flex',
           alignItems: 'flex-start',
           justifyContent: 'space-between',
-          marginBottom: 28,
+          marginBottom: 24,
           gap: 16,
           flexWrap: 'wrap' as const,
         }}
@@ -341,31 +397,48 @@ export function HermesAgentsScreen() {
             style={{ margin: '6px 0 0', fontSize: 14, color: T.ink2, lineHeight: 1.4, maxWidth: 520 }}
           >
             Your autonomous content team. Eight specialized agents, orchestrated by
-            ContentBoss.
+            ContentBoss — spawn each one individually via conductor-spawn.
           </p>
         </div>
-        <button
-          disabled
+      </div>
+
+      {/* ── Product context input ────────────────────────────────────── */}
+      <Card style={{ padding: '14px 18px', marginBottom: 24 }}>
+        <label
+          htmlFor="hx-product"
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '9px 18px',
-            borderRadius: 8,
-            border: 'none',
-            background: T.accent,
-            color: '#fff',
-            fontSize: 13.5,
+            display: 'block',
+            fontSize: 11,
             fontWeight: 600,
-            cursor: 'not-allowed',
-            opacity: 0.5,
-            flexShrink: 0,
+            letterSpacing: '0.09em',
+            textTransform: 'uppercase' as const,
+            color: T.ink3,
+            marginBottom: 6,
           }}
         >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>
-          New Session
-        </button>
-      </div>
+          Product context
+        </label>
+        <input
+          id="hx-product"
+          value={product}
+          onChange={(e) => setProduct(e.target.value)}
+          placeholder="e.g. AeroGlow LED Face Mask"
+          style={{
+            width: '100%',
+            maxWidth: 480,
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: `1px solid ${T.border}`,
+            fontSize: 13.5,
+            color: T.ink,
+            outline: 'none',
+            background: '#fff',
+          }}
+        />
+        <p style={{ margin: '6px 0 0', fontSize: 12, color: T.ink3 }}>
+          Used to fill each agent's goal template (e.g. “{'{product}'}” → your product).
+        </p>
+      </Card>
 
       {/* ── Stats row ────────────────────────────────────────────────── */}
       <div
@@ -376,15 +449,24 @@ export function HermesAgentsScreen() {
           flexWrap: 'wrap' as const,
         }}
       >
-        {STATS.map((s) => (
-          <StatCard
-            key={s.label}
-            label={s.label}
-            value={s.value}
-            sub={s.sub}
-            subColor={s.subColor}
-          />
-        ))}
+        <StatCard
+          label="Total Agents"
+          value={String(HERMES_TIKTOK_AGENTS.length)}
+          sub="All registered"
+          subColor={T.success}
+        />
+        <StatCard
+          label="Running Now"
+          value={String(runningCount)}
+          sub={runningCount === 0 ? 'All idle' : 'Active missions'}
+          subColor={runningCount === 0 ? T.ink3 : T.accentInk}
+        />
+        <StatCard
+          label="Completed"
+          value={String(completedCount)}
+          sub={`of ${HERMES_TIKTOK_AGENTS.length} agents`}
+          subColor={T.ink3}
+        />
       </div>
 
       {/* ── Roster header ────────────────────────────────────────────── */}
@@ -396,11 +478,11 @@ export function HermesAgentsScreen() {
           marginBottom: 16,
         }}
       >
-        <SecLabel>Agent Roster — 8 agents</SecLabel>
-        <span style={{ fontSize: 12, color: T.ink3 }}>All operational</span>
+        <SecLabel>Agent Roster — {HERMES_TIKTOK_AGENTS.length} agents</SecLabel>
+        <span style={{ fontSize: 12, color: T.ink3 }}>conductor-spawn ready</span>
       </div>
 
-      {/* ── Agent grid (2×4) ─────────────────────────────────────────── */}
+      {/* ── Agent grid ───────────────────────────────────────────────── */}
       <div
         style={{
           display: 'grid',
@@ -408,8 +490,13 @@ export function HermesAgentsScreen() {
           gap: 16,
         }}
       >
-        {AGENTS.map((agent) => (
-          <AgentCard key={agent.name} agent={agent} />
+        {HERMES_TIKTOK_AGENTS.map((agent) => (
+          <AgentCard
+            key={agent.id}
+            agent={agent}
+            runtime={runtimes[agent.id]}
+            onSpawn={handleSpawn}
+          />
         ))}
       </div>
     </div>
