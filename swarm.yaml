@@ -496,3 +496,279 @@ workers:
   mcpServers:
   - gbrain
   wrapper: inbox:triage
+- id: content-boss
+  name: ContentBoss
+  role: Master Orchestrator / Pipeline Conductor
+  specialty: TikTok affiliate pipeline orchestration, agent delegation, mission logging, cost control
+  model: Claude Haiku 4.5
+  mission: Run the full HermesTikTok affiliate pipeline end-to-end by delegating to the 7 specialist agents, then log the run and update memory.
+  profile: content-boss
+  modes:
+  - run
+  tools:
+  - delegation
+  - todo
+  - kanban
+  - skills
+  - file
+  - terminal
+  - session_search
+  skills:
+  - content-boss
+  - workspace-dispatch
+  capabilities:
+  - orchestration
+  - delegation
+  - pipeline-control
+  - cost-tracking
+  - mission-logging
+  preferredTaskTypes:
+  - orchestration
+  - pipeline
+  - coordination
+  - delegation
+  greenlightRequiredFor:
+  - publish
+  - external-send
+  - destructive
+  maxConcurrentTasks: 1
+  acceptsBroadcast: true
+  plugins: []
+  pluginToolsets: []
+  mcpServers: []
+  wrapper: content-boss:run
+- id: trend-hunter
+  name: TrendHunter
+  role: Trend Scout / Product Research
+  specialty: Shopee/Lazada Malaysia trend scouting, viral product discovery, affiliate scoring
+  model: Claude Haiku 4.5
+  mission: Find the top trending Malaysian affiliate products with strong viral and commission potential, scored against winning patterns.
+  profile: trend-hunter
+  modes:
+  - scout
+  tools:
+  - web
+  - browser
+  - skills
+  - file
+  - session_search
+  - todo
+  skills:
+  - trend-hunter
+  capabilities:
+  - trend-research
+  - product-discovery
+  - market-analysis
+  - affiliate-scoring
+  preferredTaskTypes:
+  - research
+  - trend
+  - product
+  - scouting
+  greenlightRequiredFor:
+  - external-send
+  maxConcurrentTasks: 1
+  acceptsBroadcast: true
+  plugins: []
+  pluginToolsets: []
+  mcpServers: []
+  wrapper: trend-hunter:scout
+- id: copywriter-agent
+  name: CopywriterAgent
+  role: BM Scriptwriter
+  specialty: Bahasa Malaysia viral scripts, hook/body/CTA structure, Malaysian slang
+  model: Claude Haiku 4.5
+  mission: Write viral Bahasa Malaysia TikTok scripts in the pasar-malam conversational tone using proven hook styles.
+  profile: copywriter-agent
+  modes:
+  - write
+  tools:
+  - skills
+  - file
+  - web
+  - session_search
+  skills:
+  - copywriter-agent
+  capabilities:
+  - copywriting
+  - bahasa-malaysia
+  - scriptwriting
+  - viral-hooks
+  preferredTaskTypes:
+  - copywriting
+  - script
+  - content
+  greenlightRequiredFor:
+  - publish
+  - external-send
+  maxConcurrentTasks: 1
+  acceptsBroadcast: true
+  plugins: []
+  pluginToolsets: []
+  mcpServers: []
+  wrapper: copywriter-agent:write
+- id: compliance-agent
+  name: ComplianceAgent
+  role: Compliance Guard / Merge Gate
+  specialty: KKM Malaysia regulations, TikTok community guidelines, health-claim review
+  model: Claude Haiku 4.5
+  mission: Block non-compliant scripts and return exact fixes before any content is produced.
+  profile: compliance-agent
+  modes:
+  - check
+  tools:
+  - skills
+  - file
+  - web
+  - session_search
+  skills:
+  - compliance-agent
+  capabilities:
+  - compliance
+  - kkm-review
+  - guideline-check
+  - risk-gate
+  preferredTaskTypes:
+  - compliance
+  - review
+  - gate
+  greenlightRequiredFor:
+  - approve-publish
+  - external-send
+  maxConcurrentTasks: 1
+  acceptsBroadcast: true
+  plugins: []
+  pluginToolsets: []
+  mcpServers: []
+  wrapper: compliance-agent:check
+- id: prompt-engineer
+  name: PromptEngineerAgent
+  role: Visual Prompt Engineer
+  specialty: Flux image prompts, Kling motion prompts, product-type aesthetic detection
+  model: Claude Haiku 4.5
+  mission: Generate 6 scene image prompts and 6 motion prompts tuned to the product's detected visual type.
+  profile: prompt-engineer
+  modes:
+  - design
+  tools:
+  - skills
+  - file
+  - session_search
+  skills:
+  - prompt-engineer
+  capabilities:
+  - prompt-engineering
+  - visual-design
+  - aesthetic-detection
+  preferredTaskTypes:
+  - prompt
+  - design
+  - visual
+  greenlightRequiredFor: []
+  maxConcurrentTasks: 1
+  acceptsBroadcast: true
+  plugins: []
+  pluginToolsets: []
+  mcpServers: []
+  wrapper: prompt-engineer:design
+- id: image-generator
+  name: ImageGeneratorAgent
+  role: Image Generator
+  specialty: fal.ai Flux scene generation, parallel batch, per-scene retry, cost caps
+  model: Claude Haiku 4.5
+  mission: Generate 6 portrait scene images via fal.ai Flux within the per-run cost cap, retrying failures independently.
+  profile: image-generator
+  modes:
+  - render
+  tools:
+  - terminal
+  - file
+  - skills
+  - web
+  skills:
+  - image-generator
+  capabilities:
+  - image-generation
+  - flux
+  - batch-generation
+  - cost-control
+  preferredTaskTypes:
+  - image
+  - render
+  - generation
+  greenlightRequiredFor:
+  - external-spend
+  maxConcurrentTasks: 1
+  acceptsBroadcast: true
+  plugins: []
+  pluginToolsets: []
+  mcpServers: []
+  wrapper: image-generator:render
+- id: video-generator
+  name: VideoGeneratorAgent
+  role: Video Generator
+  specialty: Kling animation, ffmpeg merge, ElevenLabs BM voiceover, final MP4 assembly
+  model: Claude Haiku 4.5
+  mission: Animate, merge, and voice the 6 scenes into a TikTok-ready MP4 within Kling and voice cost caps.
+  profile: video-generator
+  modes:
+  - produce
+  tools:
+  - terminal
+  - file
+  - skills
+  - web
+  skills:
+  - video-generator
+  capabilities:
+  - video-generation
+  - kling
+  - ffmpeg-merge
+  - voiceover
+  preferredTaskTypes:
+  - video
+  - render
+  - merge
+  - voiceover
+  greenlightRequiredFor:
+  - external-spend
+  maxConcurrentTasks: 1
+  acceptsBroadcast: true
+  plugins: []
+  pluginToolsets: []
+  mcpServers: []
+  wrapper: video-generator:produce
+- id: analytics-agent
+  name: AnalyticsAgent
+  role: Analytics / Feedback Loop
+  specialty: run logging, performance analysis, winning-pattern synthesis, weekly reporting
+  model: Claude Haiku 4.5
+  mission: Log every pipeline run and synthesize winning patterns that steer TrendHunter and CopywriterAgent on future runs.
+  profile: analytics-agent
+  modes:
+  - track
+  tools:
+  - skills
+  - file
+  - session_search
+  - todo
+  - kanban
+  skills:
+  - analytics-agent
+  capabilities:
+  - analytics
+  - performance-tracking
+  - feedback-loop
+  - pattern-synthesis
+  preferredTaskTypes:
+  - analytics
+  - reporting
+  - tracking
+  greenlightRequiredFor:
+  - publish
+  maxConcurrentTasks: 1
+  acceptsBroadcast: true
+  plugins: []
+  pluginToolsets: []
+  mcpServers: []
+  wrapper: analytics-agent:track
