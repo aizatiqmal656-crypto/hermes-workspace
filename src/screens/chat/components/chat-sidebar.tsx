@@ -917,7 +917,7 @@ function ChatSidebarComponent({
             : 48
           : isMobile
             ? '85vw'
-            : 220,
+            : 300,
       }}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       className={cn(
@@ -925,7 +925,7 @@ function ChatSidebarComponent({
         isMobile && isCollapsed && 'pointer-events-none overflow-hidden',
       )}
       data-tour="sidebar-container"
-      style={isMobile ? { maxWidth: 280 } : undefined}
+      style={isMobile ? { maxWidth: 360 } : undefined}
       onMouseEnter={() => {
         if (sidebarHoverExpand && !isMobile && isCollapsed) {
           setIsHoverExpanded(true)
@@ -938,48 +938,40 @@ function ChatSidebarComponent({
       {...(isMobile && isCollapsed ? { inert: true } : {})}
     >
       {/* ── Header ──────────────────────────────────────────────────── */}
-      <div
-        className="relative flex h-14 items-center border-b shrink-0 theme-border"
-        style={{ padding: isVisuallyCollapsed ? '0 4px' : '0 16px' }}
+      <motion.div
+        layout
+        transition={{ layout: transition }}
+        className="relative flex h-12 items-center px-2"
       >
         <AnimatePresence initial={false}>
-          {!isVisuallyCollapsed && (
+          {!isVisuallyCollapsed ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={transition}
-              className="flex items-center gap-2.5 flex-1 min-w-0 pr-8"
             >
-              <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>🔥</span>
-              <div className="min-w-0">
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 14,
-                    color: 'var(--theme-text)',
-                    lineHeight: 1.2,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
+              <Link
+                to="/chat"
+                className={cn(
+                  buttonVariants({ variant: 'ghost', size: 'sm' }),
+                  'w-full pl-1.5 justify-start gap-2',
+                )}
+              >
+                <img
+                  src="/claude-avatar.webp"
+                  alt="Hermes Agent"
+                  className="size-6 rounded-lg"
+                />
+                <span
+                  className="text-sm font-semibold tracking-tight"
+                  style={{ color: 'var(--theme-text)' }}
                 >
-                  HermesTikTok
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--theme-muted)',
-                    lineHeight: 1.2,
-                    whiteSpace: 'nowrap',
-                    marginTop: 1,
-                  }}
-                >
-                  Affiliate Automation
-                </div>
-              </div>
+                  Hermes Workspace
+                </span>
+              </Link>
             </motion.div>
-          )}
+          ) : null}
         </AnimatePresence>
         <TooltipProvider>
           <TooltipRoot>
@@ -992,7 +984,7 @@ function ChatSidebarComponent({
                   aria-label={
                     isVisuallyCollapsed ? 'Open Sidebar' : 'Close Sidebar'
                   }
-                  className="absolute right-2 top-1/2 -translate-y-1/2 shrink-0 opacity-80 hover:opacity-100"
+                  className="absolute right-2 top-1/2 shrink-0 -translate-y-1/2 opacity-80 hover:opacity-100"
                   data-tour="sidebar-collapse-toggle"
                 >
                   {isVisuallyCollapsed ? (
@@ -1016,236 +1008,250 @@ function ChatSidebarComponent({
             </TooltipContent>
           </TooltipRoot>
         </TooltipProvider>
+      </motion.div>
+
+      {/* ── Search (ChatGPT-style, above sections) ─────────────────── */}
+      <div className="px-2 pb-1">
+        <motion.div
+          layout
+          transition={{ layout: transition }}
+          className="w-full"
+        >
+          <NavItem
+            item={searchItem}
+            isCollapsed={isVisuallyCollapsed}
+            transition={transition}
+            onSelectSession={onSelectSession}
+          />
+        </motion.div>
       </div>
 
-      {/* ── Nav items ─────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
-        <nav className="px-2 pt-3 pb-2 space-y-0.5">
-          {!isVisuallyCollapsed && (
-            <div
+      {/* ── New Session button ──────────────────────────────────────── */}
+      {!isVisuallyCollapsed && (
+        <div className="px-2 pb-1">
+          <Link
+            to="/chat/$sessionKey"
+            params={{ sessionKey: 'new' }}
+            onClick={() => {
+              onSelectSession?.()
+            }}
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'sm' }),
+              'w-full justify-start gap-2.5 px-3 py-2 text-primary-900 hover:bg-primary-200 dark:hover:bg-primary-800',
+              isNewSessionActive &&
+                'bg-accent-500/10 text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-900/300/15',
+            )}
+            data-tour="new-session"
+          >
+            <HugeiconsIcon
+              icon={PencilEdit02Icon}
+              size={20}
+              strokeWidth={1.5}
+              className="size-5 shrink-0"
+            />
+            <span>New Session</span>
+          </Link>
+        </div>
+      )}
+
+      {/* ── HermesWorld featured link (gold castle, NEW badge) ────── */}
+      {/* Hide when VITE_HERMESWORLD_ENABLED is explicitly '0' */}
+      {!isVisuallyCollapsed &&
+        (import.meta as any).env?.VITE_HERMESWORLD_ENABLED !== '0' && (
+        <div className="px-2 pb-2">
+          <Link
+            to="/playground"
+            onClick={() => onSelectSession?.()}
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'sm' }),
+              'group w-full justify-start gap-2.5 px-3 py-2 text-primary-900 hover:bg-primary-200 dark:hover:bg-primary-800',
+              isPlaygroundActive &&
+                'bg-accent-500/10 text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-900/300/15',
+            )}
+            data-tour="hermesworld"
+          >
+            <HugeiconsIcon
+              icon={Castle02Icon}
+              size={20}
+              strokeWidth={1.5}
+              className="size-5 shrink-0"
+              style={{ color: '#facc15' }}
+            />
+            <span>HermesWorld</span>
+            <span
+              className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold leading-none"
               style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: '#9B9B9B',
+                background:
+                  'linear-gradient(180deg, #fde68a 0%, #fbbf24 50%, #d4a017 100%)',
+                color: '#0b1320',
+                boxShadow: '0 0 8px rgba(250,204,21,0.4)',
                 letterSpacing: '0.08em',
-                textTransform: 'uppercase' as const,
-                padding: '0 12px 8px',
               }}
             >
-              WORKSPACE
-            </div>
+              NEW
+            </span>
+          </Link>
+        </div>
+      )}
+
+      {/* ── Scrollable body: nav + sessions ─────────────────────────── */}
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin flex flex-col">
+        {/* Navigation sections */}
+        <div className={cn('shrink-0 space-y-0.5 px-2', isMobile && 'order-2')}>
+          <SectionLabel
+            label="Main"
+            isCollapsed={isVisuallyCollapsed}
+            transition={transition}
+            collapsible
+            expanded={mainExpanded}
+            onToggle={toggleMain}
+            navigateTo={mainNav}
+          />
+          <CollapsibleSection
+            expanded={mainExpanded || isCollapsed}
+            items={mainItems}
+            isCollapsed={isVisuallyCollapsed}
+            transition={transition}
+            onSelectSession={onSelectSession}
+          />
+
+          <SectionLabel
+            label="Knowledge"
+            isCollapsed={isVisuallyCollapsed}
+            transition={transition}
+            collapsible
+            expanded={knowledgeExpanded}
+            onToggle={toggleKnowledge}
+            navigateTo={knowledgeNav}
+          />
+          <CollapsibleSection
+            expanded={knowledgeExpanded || isCollapsed}
+            items={knowledgeItems}
+            isCollapsed={isVisuallyCollapsed}
+            transition={transition}
+            onSelectSession={onSelectSession}
+          />
+
+          {/* System */}
+          <CollapsibleSection
+            expanded={true}
+            items={systemItems}
+            isCollapsed={isVisuallyCollapsed}
+            transition={transition}
+            onSelectSession={onSelectSession}
+          />
+        </div>
+
+        {/* Sessions list */}
+        <div className={cn('shrink-0 mt-1', isMobile && 'order-1')}>
+          <AnimatePresence initial={false}>
+            {!isVisuallyCollapsed && (
+              <motion.div
+                key="content"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={transition}
+                className="flex flex-col w-full min-h-0 h-full"
+              >
+                <div className="flex-1 min-h-0">
+                  <SidebarSessions
+                    sessions={sessions}
+                    activeFriendlyId={activeFriendlyId}
+                    onSelect={onSelectSession}
+                    onRename={handleOpenRename}
+                    onDelete={handleOpenDelete}
+                    loading={sessionsLoading}
+                    fetching={sessionsFetching}
+                    error={sessionsError}
+                    onRetry={onRetrySessions}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+      {/* end scrollable body */}
+
+      {/* ── Footer with User Menu ─────────────────────────────────── */}
+      <div className="px-2 py-2.5 border-t shrink-0 theme-border theme-panel">
+        {/* User card + actions */}
+        <div
+          className={cn(
+            'flex items-center rounded-lg transition-colors',
+            isVisuallyCollapsed ? 'flex-col gap-2 py-2' : 'gap-2.5 px-2 py-1.5',
           )}
+        >
+          {/* User menu trigger */}
+          <MenuRoot>
+            <MenuTrigger
+              data-tour="settings"
+              className={cn(
+                'flex items-center gap-2.5 rounded-lg py-1 transition-colors hover:bg-primary-200 dark:hover:bg-neutral-800 flex-1 min-w-0',
+                isVisuallyCollapsed ? 'justify-center px-0' : 'px-1.5',
+              )}
+            >
+              <UserAvatar
+                size={28}
+                src={profileAvatarDataUrl}
+                alt={profileDisplayName}
+              />
+              <AnimatePresence initial={false} mode="wait">
+                {!isVisuallyCollapsed && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={transition}
+                    className="flex-1 min-w-0 flex items-center gap-1.5"
+                  >
+                    <span className="block truncate text-sm font-medium text-primary-900 dark:text-neutral-100">
+                      {profileDisplayName}
+                    </span>
+                    <StatusDot />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </MenuTrigger>
+            <MenuContent side="top" align="start" className="min-w-[200px]">
+              <MenuItem
+                onClick={function onOpenSettings() {
+                  handleOpenSettings('claude')
+                }}
+                className="justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <HugeiconsIcon
+                    icon={Settings01Icon}
+                    size={20}
+                    strokeWidth={1.5}
+                  />
+                  Settings
+                </span>
+              </MenuItem>
+            </MenuContent>
+          </MenuRoot>
 
-          {(
-            [
-              {
-                label: 'Dashboard',
-                icon: DashboardSquare01Icon,
-                to: '/dashboard' as const,
-                active: isDashboardActive,
-              },
-              {
-                label: 'TikTok Pipeline',
-                icon: Castle02Icon,
-                to: '/tiktok' as const,
-                active: isTikTokActive,
-                live: true,
-              },
-              {
-                label: 'Agents',
-                icon: UserMultipleIcon,
-                to: '/operations' as const,
-                active: isOperationsActive,
-              },
-              {
-                label: 'Analytics',
-                icon: Building01Icon,
-                to: '/dashboard' as const,
-                active: pathname === '/analytics',
-              },
-              {
-                label: 'Settings',
-                icon: Settings01Icon,
-                to: '/settings' as const,
-                active: pathname === '/settings',
-              },
-              {
-                label: 'Conductor',
-                icon: Rocket01Icon,
-                to: '/conductor' as const,
-                active: pathname === '/conductor',
-              },
-            ] as const
-          ).map((item) => {
-            const isActive = item.active
-
-            const itemContent = (
-              <Link
-                to={item.to}
-                onClick={() => onSelectSession?.()}
-                className="flex items-center gap-2.5 rounded-lg transition-colors w-full"
-                style={{
-                  fontSize: 14,
-                  fontWeight: isActive ? 600 : 400,
-                  color: isActive ? '#F59E0B' : '#6B6B6B',
-                  background: isActive ? '#FEF3E2' : 'transparent',
-                  padding: isVisuallyCollapsed ? '8px 10px' : '7px 12px',
-                  borderLeft: isActive
-                    ? '3px solid #F59E0B'
-                    : '3px solid transparent',
-                  marginLeft: -2,
-                  paddingLeft: isActive ? 9 : 12,
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive)
-                    e.currentTarget.style.background = 'rgba(245,158,11,0.06)'
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) e.currentTarget.style.background = 'transparent'
-                }}
+          {/* Settings + Theme toggle */}
+          {!isVisuallyCollapsed && (
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => handleOpenSettings('claude')}
+                className="shrink-0 rounded-lg p-1.5 text-primary-400 hover:bg-primary-200 dark:hover:bg-neutral-800 hover:text-primary-600 dark:hover:text-neutral-300 transition-colors"
+                aria-label="Settings"
               >
                 <HugeiconsIcon
-                  icon={item.icon as any}
-                  size={18}
+                  icon={Settings01Icon}
+                  size={16}
                   strokeWidth={1.5}
-                  style={{ flexShrink: 0, color: isActive ? '#F59E0B' : '#9B9B9B' }}
                 />
-                {!isVisuallyCollapsed && (
-                  <>
-                    <span className="flex-1 min-w-0 truncate">{item.label}</span>
-                    {'live' in item && item.live && (
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          background: '#10B981',
-                          color: '#fff',
-                          borderRadius: 4,
-                          padding: '1px 5px',
-                          letterSpacing: '0.04em',
-                          flexShrink: 0,
-                        }}
-                      >
-                        LIVE
-                      </span>
-                    )}
-                  </>
-                )}
-              </Link>
-            )
-
-            if (isVisuallyCollapsed) {
-              return (
-                <TooltipProvider key={item.label}>
-                  <TooltipRoot>
-                    <TooltipTrigger render={<div>{itemContent}</div>} />
-                    <TooltipContent side="right">{item.label}</TooltipContent>
-                  </TooltipRoot>
-                </TooltipProvider>
-              )
-            }
-
-            return <div key={item.label}>{itemContent}</div>
-          })}
-        </nav>
-      </div>
-
-      {/* ── Footer ─────────────────────────────────────────────────── */}
-      <div className="px-3 py-3 border-t shrink-0 theme-border">
-        <AnimatePresence initial={false} mode="wait">
-          {!isVisuallyCollapsed ? (
-            <motion.div
-              key="expanded"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={transition}
-              className="flex items-center gap-2.5"
-            >
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  background: '#F59E0B',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: 14,
-                  color: '#fff',
-                  flexShrink: 0,
-                  userSelect: 'none' as const,
-                }}
-              >
-                A
-              </div>
-              <div className="flex-1 min-w-0">
-                <div
-                  style={{
-                    fontWeight: 600,
-                    fontSize: 13,
-                    color: 'var(--theme-text)',
-                    lineHeight: 1.2,
-                  }}
-                >
-                  Aizat
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--theme-muted)',
-                    lineHeight: 1.3,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    marginTop: 1,
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      background: '#10B981',
-                      display: 'inline-block',
-                      flexShrink: 0,
-                    }}
-                  />
-                  <span>Online · Pro plan</span>
-                </div>
-              </div>
+              </button>
               <ThemeToggleMini />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="collapsed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={transition}
-              className="flex justify-center"
-            >
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  background: '#F59E0B',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: 12,
-                  color: '#fff',
-                  userSelect: 'none' as const,
-                }}
-              >
-                A
-              </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+        </div>
       </div>
 
       {/* ── Dialogs ─────────────────────────────────────────────────── */}
