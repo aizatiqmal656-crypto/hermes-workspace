@@ -16,6 +16,7 @@ import { appendTikTokMemoryEvent, ensureTikTokMemoryNamespace, ensureTikTokMemor
 import type { TikTokMemoryEntry } from '../../server/swarm-memory'
 import { getHermesTikTokAgent } from '../../screens/agents/agent-presets'
 import type { HermesTikTokAgentPreset } from '../../screens/agents/agent-presets'
+import { executeTool, getToolsForAgent } from '../../server/tools'
 import type { SwarmMission } from '../../server/swarm-missions'
 
 let cachedSkill: string | null = null
@@ -35,6 +36,8 @@ type ConductorSpawnBody = {
   product?: unknown
   category?: unknown
   script?: unknown
+  // Phase R4 — execute a registered tool directly.
+  toolCall?: unknown
 }
 
 function repoRoot(): string {
@@ -198,8 +201,22 @@ function buildAgentSpawnPrompt(input: {
   skillBody: string
   memoryNamespacePath: string
   memoryContext: string
+  toolDescriptions: Array<{ name: string; description: string }>
 }): string {
-  const { agent, goal, skillBody, memoryNamespacePath, memoryContext } = input
+  const { agent, goal, skillBody, memoryNamespacePath, memoryContext, toolDescriptions } = input
+  const toolLines =
+    toolDescriptions.length > 0
+      ? [
+          '## Available Tools',
+          '',
+          'You can request these real tools. To call one, emit a line:',
+          'TOOL_CALL: <tool_name> {"arg": "value"}',
+          'The runtime executes it via POST /api/conductor-spawn { toolCall: { tool, args } } and returns the result.',
+          '',
+          ...toolDescriptions.map((t) => `- **${t.name}** — ${t.description}`),
+          '',
+        ]
+      : []
   return [
     `You are ${agent.name}, the ${agent.role} in the HermesTikTok pipeline.`,
     '',
@@ -214,6 +231,7 @@ function buildAgentSpawnPrompt(input: {
     'Read upstream namespaces before acting; write your outputs before reporting.',
     ...(memoryContext ? ['', memoryContext] : []),
     '',
+    ...toolLines,
     '## Granted Toolsets',
     '',
     agent.toolsets.join(', ') || 'none',
@@ -676,6 +694,17 @@ export const Route = createFileRoute('/api/conductor-spawn')({
 
         try {
           const body = (await request.json().catch(() => ({}))) as ConductorSpawnBody
+
+          // ── Phase R4: direct tool execution via the tool registry ────────
+          if (body.toolCall && typeof body.toolCall === 'object') {
+            const call = body.toolCall as { tool?: unknown; args?: unknown }
+            const toolName = readOptionalString(call.tool)
+            if (!toolName) return json({ ok: false, error: 'toolCall.tool required' }, { status: 400 })
+            const args = call.args && typeof call.args === 'object' ? (call.args as Record<string, unknown>) : {}
+            const execution = await executeTool(toolName, args)
+            return json({ mode: 'tool', ...execution }, { status: execution.ok ? 200 : 400 })
+          }
+
           const orchestratorModel = readOptionalString(body.orchestratorModel)
           const projectsDir = readOptionalString(body.projectsDir)
           const maxParallel = readMaxParallel(body.maxParallel)
@@ -744,6 +773,7 @@ export const Route = createFileRoute('/api/conductor-spawn')({
                 skillBody: loadTikTokSkill(agent.skill),
                 memoryNamespacePath,
                 memoryContext: buildAgentMemoryContext(agent),
+                toolDescriptions: getToolsForAgent(agent.id),
               })
             : buildOrchestratorPrompt(goal, loadDispatchSkill(), {
                 orchestratorModel,
