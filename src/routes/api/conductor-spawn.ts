@@ -17,6 +17,8 @@ import type { TikTokMemoryEntry } from '../../server/swarm-memory'
 import { getHermesTikTokAgent } from '../../screens/agents/agent-presets'
 import type { HermesTikTokAgentPreset } from '../../screens/agents/agent-presets'
 import { executeTool, getToolsForAgent } from '../../server/tools'
+import { getPipelineMission, startFullPipeline } from '../../server/tiktok-pipeline'
+import type { PipelineMission } from '../../server/tiktok-pipeline'
 import type { SwarmMission } from '../../server/swarm-missions'
 
 let cachedSkill: string | null = null
@@ -598,6 +600,25 @@ function createNativeAgentMission(input: {
   return { missionId: input.missionName, missionTitle, assignments }
 }
 
+/** Shape a pipeline mission into the status contract the TikTok UI polls (Task 4). */
+function toPipelineStatus(m: PipelineMission) {
+  return {
+    id: m.id,
+    status: m.status,
+    product: m.product,
+    activeAgent: m.activeAgent,
+    activeAgentName: m.activeAgent ? m.agents[m.activeAgent]?.name ?? m.activeAgent : null,
+    completedAgents: m.completedAgents,
+    agents: Object.values(m.agents).map((a) => ({ id: a.id, name: a.name, status: a.status, error: a.error, costRm: a.costRm, output: a.output })),
+    outputs: m.outputs,
+    costRm: Number(m.costRm.toFixed(2)),
+    progressPct: m.progressPct,
+    finalVideoUrl: m.finalVideoUrl,
+    error: m.error,
+    log: m.log.slice(-30),
+  }
+}
+
 export const Route = createFileRoute('/api/conductor-spawn')({
   server: {
     handlers: {
@@ -608,6 +629,12 @@ export const Route = createFileRoute('/api/conductor-spawn')({
         const requestedLines = Number(url.searchParams.get('lines') || '200')
         const lines = Number.isFinite(requestedLines) ? Math.min(2000, Math.max(1, requestedLines)) : 200
         if (!missionId) return json({ ok: false, error: 'missionId required' }, { status: 400 })
+
+        // ── Phase R5: ContentBoss autonomous pipeline status ─────────────
+        const pipeline = getPipelineMission(missionId)
+        if (pipeline) {
+          return json({ ok: true, mode: 'pipeline', mission: toPipelineStatus(pipeline) })
+        }
 
         const nativeMission = getSwarmMission(missionId)
         if (nativeMission) {
@@ -740,6 +767,23 @@ export const Route = createFileRoute('/api/conductor-spawn')({
               },
               { status: 400 },
             )
+          }
+
+          // ── Phase R5: ContentBoss runs the full autonomous pipeline ──────
+          // Spawning content-boss kicks off the end-to-end orchestration
+          // (TrendHunter → … → AnalyticsAgent) in the background; the UI polls
+          // GET ?missionId=<id> for live status.
+          if (agent && agent.id === 'content-boss') {
+            const product = readOptionalString(body.product) || 'AeroGlow LED Face Mask'
+            const pipelineMissionId = `pipeline-${Date.now()}`
+            startFullPipeline(pipelineMissionId, product)
+            return json({
+              ok: true,
+              mode: 'pipeline',
+              missionId: pipelineMissionId,
+              product,
+              agent: { id: agent.id, name: agent.name },
+            })
           }
 
           // For agent spawns, initialise all 8 namespaces and resolve this

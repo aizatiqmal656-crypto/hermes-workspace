@@ -44,6 +44,32 @@ interface SceneVideoState {
   requestId: string | null
 }
 
+// Live status of the autonomous ContentBoss pipeline (Phase R5), polled from
+// GET /api/conductor-spawn?missionId=<id>.
+interface PipelineMissionStatus {
+  id: string
+  status: 'running' | 'completed' | 'failed'
+  product: string
+  activeAgent: string | null
+  activeAgentName: string | null
+  completedAgents: Array<string>
+  agents: Array<{ id: string; name: string; status: string; error: string | null; costRm: number; output?: string }>
+  outputs: {
+    product: { name: string; price?: string; trendScore?: number; viralReason?: string } | null
+    script: { hook: string; body: string; cta: string } | null
+    compliance: { decision: string; reason: string } | null
+    prompts: Array<{ sceneNumber: number; angle?: string; image_prompt: string; motion_prompt: string; voiceover_text: string }>
+    images: Array<string>
+    videos: Array<string>
+    voiceWarning: string | null
+    finalVideo: string | null
+  }
+  costRm: number
+  progressPct: number
+  finalVideoUrl: string | null
+  error: string | null
+}
+
 // ---------------------------------------------------------------------------
 // Agent pipeline sequence
 // ---------------------------------------------------------------------------
@@ -441,6 +467,15 @@ export function TikTokScreen() {
     setSceneVideos((prev) => prev.map((s, i) => (i === idx ? { ...s, ...update } : s)))
   }, [])
 
+  // ── Autonomous pipeline (Phase R5) ──
+  const [productInput, setProductInput] = useState('AeroGlow LED Face Mask')
+  const [pipelineCost, setPipelineCost] = useState(0)
+  const [pipelineAgents, setPipelineAgents] = useState<
+    Array<{ id: string; name: string; status: string; error: string | null; costRm: number }>
+  >([])
+  const [pipelineFinalVideo, setPipelineFinalVideo] = useState<string | null>(null)
+  const pipelineCancelRef = useRef(false)
+
   // ── Persistent memory (Phase R3) ──
   const [memorySaved, setMemorySaved] = useState(false)
   const [memorySaving, setMemorySaving] = useState(false)
@@ -528,7 +563,61 @@ export function TikTokScreen() {
   // Pipeline runner
   // -------------------------------------------------------------------------
 
+  // Map a pipeline agent id → index in the 5-slot PIPELINE_AGENTS panel.
+  const STAGE_TO_PANEL: Record<string, number> = {
+    'trend-hunter': 1,
+    'copywriter-agent': 2,
+    'compliance-agent': 3,
+    'analytics-agent': 4,
+  }
+
+  const applyPipelineMission = useCallback((mission: PipelineMissionStatus) => {
+    setPipelineCost(mission.costRm ?? 0)
+    setPipelineAgents(mission.agents ?? [])
+    setPipelineFinalVideo(mission.finalVideoUrl ?? null)
+
+    // Progress panel mapping.
+    const completedPanels = (mission.completedAgents ?? [])
+      .map((id) => STAGE_TO_PANEL[id])
+      .filter((n): n is number => typeof n === 'number')
+    const maxDone = completedPanels.length > 0 ? Math.max(...completedPanels) : -1
+    setDoneUpTo(mission.status === 'completed' ? PIPELINE_AGENTS.length - 1 : maxDone)
+    setActiveAgentIdx(
+      mission.status === 'completed' ? -1 : (mission.activeAgent ? STAGE_TO_PANEL[mission.activeAgent] ?? 0 : 0),
+    )
+
+    // Outputs → existing UI state.
+    const o = mission.outputs
+    if (o?.product) {
+      setProduct({
+        name: o.product.name,
+        price: o.product.price ?? 'RM—',
+        trendScore: o.product.trendScore ?? 0,
+        viralReason: o.product.viralReason ?? '',
+      })
+    }
+    if (o?.script) setScript({ hook: o.script.hook, body: o.script.body, cta: o.script.cta })
+    if (o?.prompts && o.prompts.length > 0) {
+      setStoryboard(
+        o.prompts.map((p) => ({
+          sceneNumber: p.sceneNumber,
+          angle: p.angle ?? '',
+          action: p.motion_prompt,
+          image_prompt: p.image_prompt,
+          voiceover_text: p.voiceover_text,
+        })),
+      )
+    }
+    if (o?.images) {
+      setSceneImages(Array.from({ length: 6 }, (_, i) => ({ url: o.images[i] ?? null, generating: false, error: null })))
+    }
+    if (o?.videos) {
+      setSceneVideos(Array.from({ length: 6 }, (_, i) => ({ url: o.videos[i] ?? null, generating: false, error: null, progress: '', requestId: null })))
+    }
+  }, [])
+
   const runPipeline = useCallback(async () => {
+    pipelineCancelRef.current = false
     setStatus('running')
     setActiveAgentIdx(0)
     setDoneUpTo(-1)
@@ -548,53 +637,64 @@ export function TikTokScreen() {
     voiceBytesRef.current = null
     setMergedVideoUrl(null)
     setMergeError(null)
+    setPipelineCost(0)
+    setPipelineAgents([])
+    setPipelineFinalVideo(null)
 
+    // 1. Spawn ContentBoss — kicks off the autonomous pipeline server-side.
+    let missionId: string
     try {
       const res = await fetch('/api/conductor-spawn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          goal:
-            "Run the daily TikTok content pipeline:\n" +
-            "1. TrendHunter researches today's top viral trends on TikTok FYP and picks the best product to feature.\n" +
-            "2. CopywriterAgent writes a scroll-stopping hook, engaging body, and compelling CTA for a 60-second TikTok script.\n" +
-            "3. ComplianceAgent reviews for TikTok community guidelines compliance.\n" +
-            "4. AnalyticsAgent provides a trend score (0-100) and predicted virality reasoning.\n" +
-            "Output a JSON report with: productName, price, trendScore, viralReason, hook, body, cta.",
-          orchestratorModel: 'auto',
-          workerModel: 'auto',
-          maxParallel: 1,
-          supervised: false,
-        }),
+        credentials: 'same-origin',
+        body: JSON.stringify({ agentId: 'content-boss', product: productInput }),
       })
-
-      const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
-      if (!res.ok) {
-        throw new Error(
-          typeof data.error === 'string' ? data.error : `HTTP ${res.status}`,
-        )
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; missionId?: string; error?: string }
+      if (!res.ok || !data.ok || !data.missionId) {
+        throw new Error(data.error ?? `HTTP ${res.status}`)
       }
-      const key =
-        (data.sessionKey as string | undefined) ||
-        (data.session_key as string | undefined) ||
-        (data.id as string | undefined) ||
-        null
-      setSessionKey(key)
+      missionId = data.missionId
+      setSessionKey(missionId)
     } catch (err) {
-      console.warn('[TikTok Pipeline] conductor-spawn failed:', err)
+      setPipelineError(err instanceof Error ? err.message : 'Failed to start pipeline')
+      setStatus('error')
+      setActiveAgentIdx(-1)
+      return
     }
 
-    for (let i = 0; i < PIPELINE_AGENTS.length; i++) {
-      setActiveAgentIdx(i)
-      await new Promise<void>((r) => setTimeout(r, PIPELINE_AGENTS[i].ms))
-      setDoneUpTo(i)
+    // 2. Poll mission status every 3s until terminal (max ~12 min).
+    for (let i = 0; i < 240; i++) {
+      if (pipelineCancelRef.current) return
+      await new Promise((r) => setTimeout(r, 3000))
+      if (pipelineCancelRef.current) return
+      try {
+        const res = await fetch(`/api/conductor-spawn?missionId=${encodeURIComponent(missionId)}`, {
+          credentials: 'same-origin',
+        })
+        const data = (await res.json().catch(() => ({}))) as { ok?: boolean; mission?: PipelineMissionStatus }
+        if (!res.ok || !data.ok || !data.mission) continue
+        applyPipelineMission(data.mission)
+        if (data.mission.status === 'completed') {
+          setStatus('done')
+          setActiveAgentIdx(-1)
+          setMemorySaved(true)
+          return
+        }
+        if (data.mission.status === 'failed') {
+          setPipelineError(data.mission.error || 'Pipeline failed')
+          setStatus('error')
+          setActiveAgentIdx(-1)
+          return
+        }
+      } catch {
+        // transient — keep polling
+      }
     }
-
+    setPipelineError('Pipeline timed out')
+    setStatus('error')
     setActiveAgentIdx(-1)
-    setStatus('done')
-    setProduct(DEMO_PRODUCT)
-    setScript(DEMO_SCRIPT)
-  }, [])
+  }, [productInput, applyPipelineMission])
 
   // -------------------------------------------------------------------------
   // Storyboard generation via /api/generate-storyboard (server → Claude API)
@@ -1107,10 +1207,29 @@ export function TikTokScreen() {
 
           {/* Pipeline Control */}
           <Card>
-            <SecHead label="Pipeline Control" />
+            <SecHead
+              label="Pipeline Control"
+              right={isRunning || isDone || pipelineCost > 0 ? `RM${pipelineCost.toFixed(2)} spent` : undefined}
+            />
             <p style={{ margin: 0, fontSize: 13.5, color: T.ink2 }}>
-              Runs the full {PIPELINE_AGENTS.length}-agent content pipeline: trend research → script → compliance → analytics.
+              ContentBoss runs the full autonomous pipeline: TrendHunter → CopywriterAgent → ComplianceAgent → PromptEngineerAgent → ImageGeneratorAgent → VideoGeneratorAgent → AnalyticsAgent.
             </p>
+
+            {/* Product input */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label htmlFor="tt-product" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: T.ink3 }}>
+                Product
+              </label>
+              <input
+                id="tt-product"
+                value={productInput}
+                onChange={(e) => setProductInput(e.target.value)}
+                disabled={isRunning}
+                placeholder="e.g. AeroGlow LED Face Mask"
+                style={{ width: '100%', maxWidth: 420, padding: '8px 12px', borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13.5, color: T.ink, background: isRunning ? T.bg : '#fff', outline: 'none' }}
+              />
+            </div>
+
             <RunBtn running={isRunning} onClick={runPipeline} />
 
             {sessionKey && (
@@ -1119,6 +1238,31 @@ export function TikTokScreen() {
               </p>
             )}
             {pipelineError && <ErrorBar message={pipelineError} />}
+
+            {/* Per-agent status / errors (R5) */}
+            {pipelineAgents.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {pipelineAgents.map((a) => {
+                  const color =
+                    a.status === 'done' ? T.successInk :
+                    a.status === 'running' ? '#4338CA' :
+                    a.status === 'error' || a.status === 'skipped' ? T.dangerInk : T.ink3
+                  return (
+                    <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 12 }}>
+                      <span style={{ color: T.ink2 }}>{a.name}</span>
+                      <span style={{ color, fontWeight: 600 }}>
+                        {a.status}{a.error ? ` — ${a.error.slice(0, 48)}` : ''}{a.costRm > 0 ? ` · RM${a.costRm.toFixed(2)}` : ''}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            {isDone && pipelineFinalVideo && (
+              <p style={{ margin: 0, fontSize: 12, color: T.successInk }}>
+                ✓ Final video merged: <code style={{ fontSize: 11, opacity: 0.8 }}>{pipelineFinalVideo}</code>
+              </p>
+            )}
             {isDone && !storyboard && (
               <p style={{ margin: 0, fontSize: 12.5, color: T.successInk }}>
                 ✓ Pipeline complete — generate storyboard below
