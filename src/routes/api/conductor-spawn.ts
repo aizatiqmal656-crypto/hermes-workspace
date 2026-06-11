@@ -12,7 +12,8 @@ import { getSwarmProfilePath } from '../../server/swarm-foundation'
 import { readWorkerMessages } from '../../server/swarm-chat-reader'
 import { newestCheckpointFromMessages } from '../../server/swarm-checkpoints'
 import { checkpointFromRuntimeSnapshot, dispatchSwarmAssignments, readRuntimeCheckpointSnapshot, runtimeCheckpointSignature } from './swarm-dispatch'
-import { ensureTikTokMemoryNamespace, ensureTikTokMemoryNamespaces, tiktokMemoryNamespaceRoot } from '../../server/swarm-memory'
+import { appendTikTokMemoryEvent, ensureTikTokMemoryNamespace, ensureTikTokMemoryNamespaces, getWinningPatterns, readAllNamespaceMemory, tiktokMemoryNamespaceRoot, writeTikTokMemory } from '../../server/swarm-memory'
+import type { TikTokMemoryEntry } from '../../server/swarm-memory'
 import { getHermesTikTokAgent } from '../../screens/agents/agent-presets'
 import type { HermesTikTokAgentPreset } from '../../screens/agents/agent-presets'
 import type { SwarmMission } from '../../server/swarm-missions'
@@ -109,6 +110,85 @@ function buildAgentGoal(
 }
 
 /**
+ * Per-agent memory read plan (Phase R3). `limit: 0` means "all entries".
+ * Each entry maps an agent id to the namespaces it should be primed with.
+ */
+const AGENT_MEMORY_READS: Record<string, Array<{ namespace: string; limit: number }>> = {
+  'content-boss': [{ namespace: 'pipeline_runs', limit: 5 }],
+  'trend-hunter': [{ namespace: 'products', limit: 10 }],
+  'copywriter-agent': [{ namespace: 'scripts', limit: 5 }],
+  'compliance-agent': [{ namespace: 'compliance', limit: 10 }],
+  'prompt-engineer': [{ namespace: 'prompts', limit: 5 }],
+  'image-generator': [{ namespace: 'images', limit: 3 }],
+  'video-generator': [{ namespace: 'videos', limit: 3 }],
+  'analytics-agent': [{ namespace: 'pipeline_runs', limit: 0 }],
+}
+
+/** Agents that should also receive AnalyticsAgent's winning_patterns/ insights. */
+const AGENT_WANTS_WINNING_PATTERNS = new Set([
+  'content-boss',
+  'trend-hunter',
+  'copywriter-agent',
+  'analytics-agent',
+])
+
+function clipJson(value: unknown, max = 600): string {
+  let text: string
+  try {
+    text = JSON.stringify(value)
+  } catch {
+    text = String(value)
+  }
+  return text.length <= max ? text : `${text.slice(0, max - 3)}...`
+}
+
+function formatMemoryEntries(entries: Array<TikTokMemoryEntry>, limit: number): string {
+  const slice = limit > 0 ? entries.slice(0, limit) : entries
+  if (slice.length === 0) return '_(none yet — this is a fresh start for this namespace)_'
+  return slice
+    .map((entry, i) => `${i + 1}. [${entry.timestamp || '?'}] ${entry.agentId}: ${clipJson(entry.data)}`)
+    .join('\n')
+}
+
+/**
+ * Build the injected memory context block for an agent (Phase R3). Reads the
+ * agent's relevant namespaces (and winning_patterns/ when applicable) so the
+ * worker is primed with prior runs before it acts. Best-effort — returns '' on
+ * any failure so memory never blocks a spawn.
+ */
+function buildAgentMemoryContext(agent: HermesTikTokAgentPreset): string {
+  try {
+    const sections: Array<string> = []
+    for (const read of AGENT_MEMORY_READS[agent.id] ?? []) {
+      const entries = readAllNamespaceMemory(read.namespace)
+      const label = read.limit > 0 ? `last ${read.limit}` : 'all'
+      sections.push(`### ${read.namespace}/ (${label})`, formatMemoryEntries(entries, read.limit), '')
+    }
+    if (AGENT_WANTS_WINNING_PATTERNS.has(agent.id)) {
+      const { latest, history } = getWinningPatterns()
+      sections.push(
+        '### winning_patterns/ (AnalyticsAgent insights)',
+        latest ? clipJson(latest, 1000) : '_(no winning patterns recorded yet)_',
+        history.length > 1 ? `(+${history.length - 1} earlier pattern snapshots)` : '',
+        '',
+      )
+    }
+    if (sections.length === 0) return ''
+    return [
+      '## Memory Context (read this before acting)',
+      '',
+      'Prior pipeline memory for your namespace(s). Use it to avoid repeating',
+      'past mistakes and to build on what worked. Do NOT duplicate existing entries.',
+      '',
+      ...sections,
+    ].join('\n')
+  } catch (error) {
+    console.warn('[conductor] memory context build failed:', error instanceof Error ? error.message : String(error))
+    return ''
+  }
+}
+
+/**
  * Build the orchestrator prompt for a single named HermesTikTok agent, injecting
  * its skill instructions and memory-namespace context before the goal.
  */
@@ -117,8 +197,9 @@ function buildAgentSpawnPrompt(input: {
   goal: string
   skillBody: string
   memoryNamespacePath: string
+  memoryContext: string
 }): string {
-  const { agent, goal, skillBody, memoryNamespacePath } = input
+  const { agent, goal, skillBody, memoryNamespacePath, memoryContext } = input
   return [
     `You are ${agent.name}, the ${agent.role} in the HermesTikTok pipeline.`,
     '',
@@ -131,6 +212,7 @@ function buildAgentSpawnPrompt(input: {
     `Read and write your durable state under: ${memoryNamespacePath}`,
     `Namespace: ${agent.memoryNamespace}`,
     'Read upstream namespaces before acting; write your outputs before reporting.',
+    ...(memoryContext ? ['', memoryContext] : []),
     '',
     '## Granted Toolsets',
     '',
@@ -146,6 +228,45 @@ function buildAgentSpawnPrompt(input: {
     '- Write your outputs to the memory namespace above before reporting.',
     '- Report a concise summary when done.',
   ].join('\n')
+}
+
+// Guard so each agent completion is persisted to memory only once across polls.
+const persistedAgentCompletions = new Set<string>()
+
+/**
+ * Persist a HermesTikTok agent's output to its memory namespace when it
+ * completes (Phase R3). Idempotent per mission+assignment via the guard set.
+ */
+function persistTikTokAgentCompletion(input: {
+  missionId: string
+  assignmentId: string
+  workerId: string
+  task: string
+  checkpoint: { stateLabel?: string; result?: string | null; nextAction?: string | null; filesChanged?: string | null }
+}): void {
+  const agent = getHermesTikTokAgent(input.workerId)
+  if (!agent) return
+  const dedupeKey = `${input.missionId}:${input.assignmentId}`
+  if (persistedAgentCompletions.has(dedupeKey)) return
+  persistedAgentCompletions.add(dedupeKey)
+  try {
+    const key = `output-${Date.now()}`
+    writeTikTokMemory(agent.id, agent.memoryNamespace, key, {
+      missionId: input.missionId,
+      task: input.task.slice(0, 500),
+      state: input.checkpoint.stateLabel ?? 'DONE',
+      result: input.checkpoint.result ?? null,
+      nextAction: input.checkpoint.nextAction ?? null,
+      filesChanged: input.checkpoint.filesChanged ?? null,
+    })
+    appendTikTokMemoryEvent(agent.id, agent.memoryNamespace, {
+      type: 'agent-completion',
+      missionId: input.missionId,
+      state: input.checkpoint.stateLabel ?? 'DONE',
+    })
+  } catch (error) {
+    console.warn('[conductor] persist agent completion failed:', error instanceof Error ? error.message : String(error))
+  }
 }
 
 function readOptionalString(value: unknown): string {
@@ -505,6 +626,17 @@ export const Route = createFileRoute('/api/conductor-spawn')({
                       checkpoint,
                       source: 'conductor-poll',
                     })
+                    // Phase R3: when a HermesTikTok agent finishes, persist its
+                    // output to its memory namespace (once per assignment).
+                    if (checkpoint.stateLabel === 'DONE') {
+                      persistTikTokAgentCompletion({
+                        missionId: nativeMission.id,
+                        assignmentId: assignment.id,
+                        workerId: assignment.workerId,
+                        task: assignment.task,
+                        checkpoint,
+                      })
+                    }
                   }
                 } catch {
                   // runtime.json might not exist yet or be temporarily unreadable
@@ -611,6 +743,7 @@ export const Route = createFileRoute('/api/conductor-spawn')({
                 goal,
                 skillBody: loadTikTokSkill(agent.skill),
                 memoryNamespacePath,
+                memoryContext: buildAgentMemoryContext(agent),
               })
             : buildOrchestratorPrompt(goal, loadDispatchSkill(), {
                 orchestratorModel,

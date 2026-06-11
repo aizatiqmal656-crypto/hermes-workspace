@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import YAML from 'yaml'
@@ -121,6 +121,217 @@ export function ensureTikTokMemoryNamespace(namespace: string): string {
 export function ensureTikTokMemoryNamespaces(): Array<string> {
   ensureDir(TIKTOK_MEMORY_ROOT)
   return TIKTOK_MEMORY_NAMESPACES.map((ns) => ensureTikTokMemoryNamespace(ns))
+}
+
+// ---------------------------------------------------------------------------
+// HermesTikTok persistent memory read/write (Phase R3)
+//
+// Real read/write helpers so the 8 agents (and the pipeline UI) can persist
+// structured state between runs. Each entry is a JSON envelope with a timestamp;
+// every operation is best-effort (never throws to the caller) and logged.
+// ---------------------------------------------------------------------------
+
+export type TikTokMemoryEntry = {
+  key: string
+  agentId: string
+  namespace: string
+  timestamp: string
+  data: unknown
+}
+
+export type TikTokMemoryEvent = {
+  timestamp: string
+  agentId: string
+  event: unknown
+}
+
+export type TikTokNamespaceStatus = {
+  namespace: string
+  path: string
+  exists: boolean
+  entryCount: number
+}
+
+function safeMemoryKey(key: string): string {
+  const cleaned = key.trim().replace(/[^a-z0-9._-]/gi, '_').slice(0, 120)
+  return cleaned || `entry-${Date.now()}`
+}
+
+function readJsonEntry(path: string): TikTokMemoryEntry | null {
+  try {
+    return JSON.parse(readFileSync(path, 'utf8')) as TikTokMemoryEntry
+  } catch {
+    return null
+  }
+}
+
+/** List all JSON entries in a namespace, newest first (by ISO timestamp). */
+function listTikTokEntries(namespace: string): Array<TikTokMemoryEntry> {
+  try {
+    const dir = ensureTikTokMemoryNamespace(namespace)
+    const ns = normalizeTikTokNamespace(namespace)
+    const entries: Array<TikTokMemoryEntry> = []
+    for (const name of readdirSync(dir)) {
+      if (!name.endsWith('.json')) continue
+      const parsed = readJsonEntry(join(dir, name))
+      if (parsed && typeof parsed === 'object') {
+        entries.push({
+          key: parsed.key ?? name.replace(/\.json$/, ''),
+          agentId: parsed.agentId ?? 'unknown',
+          namespace: ns,
+          timestamp: parsed.timestamp ?? '',
+          data: parsed.data ?? parsed,
+        })
+      }
+    }
+    return entries.sort((a, b) => (b.timestamp > a.timestamp ? 1 : b.timestamp < a.timestamp ? -1 : 0))
+  } catch (err) {
+    console.error('[tiktok-memory] list failed:', err instanceof Error ? err.message : String(err))
+    return []
+  }
+}
+
+/** Write a structured JSON entry to a TikTok memory namespace. */
+export function writeTikTokMemory(
+  agentId: string,
+  namespace: string,
+  key: string,
+  data: unknown,
+): TikTokMemoryEntry | null {
+  try {
+    const dir = ensureTikTokMemoryNamespace(namespace)
+    const entry: TikTokMemoryEntry = {
+      key: safeMemoryKey(key),
+      agentId: agentId || 'unknown',
+      namespace: normalizeTikTokNamespace(namespace),
+      timestamp: new Date().toISOString(),
+      data,
+    }
+    atomicWrite(join(dir, `${entry.key}.json`), `${JSON.stringify(entry, null, 2)}\n`)
+    console.log(`[tiktok-memory] write ${entry.namespace}/${entry.key}.json by ${entry.agentId}`)
+    return entry
+  } catch (err) {
+    console.error('[tiktok-memory] write failed:', err instanceof Error ? err.message : String(err))
+    return null
+  }
+}
+
+/**
+ * Read from a TikTok memory namespace.
+ * - With `key`: returns the single entry (or null if missing).
+ * - Without `key`: returns all entries in the namespace, newest first.
+ */
+export function readTikTokMemory(
+  agentId: string,
+  namespace: string,
+  key?: string,
+): TikTokMemoryEntry | Array<TikTokMemoryEntry> | null {
+  try {
+    const dir = ensureTikTokMemoryNamespace(namespace)
+    if (key) {
+      const file = join(dir, `${safeMemoryKey(key)}.json`)
+      if (!existsSync(file)) {
+        console.log(`[tiktok-memory] read miss ${normalizeTikTokNamespace(namespace)}/${key} by ${agentId || 'unknown'}`)
+        return null
+      }
+      console.log(`[tiktok-memory] read ${normalizeTikTokNamespace(namespace)}/${key} by ${agentId || 'unknown'}`)
+      return readJsonEntry(file)
+    }
+    const entries = listTikTokEntries(namespace)
+    console.log(`[tiktok-memory] read ${entries.length} from ${normalizeTikTokNamespace(namespace)} by ${agentId || 'unknown'}`)
+    return entries
+  } catch (err) {
+    console.error('[tiktok-memory] read failed:', err instanceof Error ? err.message : String(err))
+    return key ? null : []
+  }
+}
+
+/** Append a timestamped event to a namespace events log (events.jsonl). */
+export function appendTikTokMemoryEvent(
+  agentId: string,
+  namespace: string,
+  event: unknown,
+): TikTokMemoryEvent | null {
+  try {
+    const dir = ensureTikTokMemoryNamespace(namespace)
+    const record: TikTokMemoryEvent = {
+      timestamp: new Date().toISOString(),
+      agentId: agentId || 'unknown',
+      event,
+    }
+    appendLine(join(dir, 'events.jsonl'), JSON.stringify(record))
+    console.log(`[tiktok-memory] event ${normalizeTikTokNamespace(namespace)} by ${record.agentId}`)
+    return record
+  } catch (err) {
+    console.error('[tiktok-memory] event failed:', err instanceof Error ? err.message : String(err))
+    return null
+  }
+}
+
+/** Read ALL agents' entries for a namespace (newest first). Used by ContentBoss/Analytics. */
+export function readAllNamespaceMemory(namespace: string): Array<TikTokMemoryEntry> {
+  const entries = listTikTokEntries(namespace)
+  console.log(`[tiktok-memory] readAll ${normalizeTikTokNamespace(namespace)} → ${entries.length} entries`)
+  return entries
+}
+
+/** Read winning_patterns/ and return the latest insights plus full history (newest first). */
+export function getWinningPatterns(): { latest: unknown; history: Array<TikTokMemoryEntry> } {
+  const history = listTikTokEntries('winning_patterns')
+  const latest = history.length > 0 ? history[0].data : null
+  console.log(`[tiktok-memory] getWinningPatterns → ${history.length} entries, latest=${latest ? 'present' : 'none'}`)
+  return { latest, history }
+}
+
+/** Log a complete pipeline run to pipeline_runs/ (also records an event). */
+export function logPipelineRun(runData: Record<string, unknown>): TikTokMemoryEntry | null {
+  const key = `run-${Date.now()}`
+  const entry = writeTikTokMemory('content-boss', 'pipeline_runs', key, {
+    ...runData,
+    loggedAt: new Date().toISOString(),
+  })
+  appendTikTokMemoryEvent('content-boss', 'pipeline_runs', {
+    type: 'pipeline-run',
+    key,
+    product: runData.product ?? null,
+    success: runData.success ?? null,
+  })
+  console.log(`[tiktok-memory] logPipelineRun ${key} success=${String(runData.success ?? 'n/a')}`)
+  return entry
+}
+
+/** Clear all entries (and events) in a namespace, preserving the README scaffold. */
+export function clearTikTokNamespace(namespace: string): number {
+  try {
+    const dir = ensureTikTokMemoryNamespace(namespace)
+    let removed = 0
+    for (const name of readdirSync(dir)) {
+      if (name === 'README.md') continue
+      if (name.endsWith('.json') || name === 'events.jsonl') {
+        unlinkSync(join(dir, name))
+        removed++
+      }
+    }
+    console.log(`[tiktok-memory] cleared ${removed} entries from ${normalizeTikTokNamespace(namespace)}`)
+    return removed
+  } catch (err) {
+    console.error('[tiktok-memory] clear failed:', err instanceof Error ? err.message : String(err))
+    return 0
+  }
+}
+
+/** Verify all 8 namespaces exist (create if missing) and log a status report. */
+export function verifyTikTokMemoryNamespaces(): Array<TikTokNamespaceStatus> {
+  ensureDir(TIKTOK_MEMORY_ROOT)
+  const status = TIKTOK_MEMORY_NAMESPACES.map((ns) => {
+    const path = ensureTikTokMemoryNamespace(ns)
+    return { namespace: ns, path, exists: existsSync(path), entryCount: listTikTokEntries(ns).length }
+  })
+  console.log(`[tiktok-memory] startup namespace check (root: ${TIKTOK_MEMORY_ROOT}):`)
+  for (const s of status) {
+    console.log(`  - ${s.namespace.padEnd(16)} ${s.exists ? 'OK' : 'MISSING'} (${s.entryCount} entries)`)
+  }
+  return status
 }
 
 function profileRoot(workerId: string): string {

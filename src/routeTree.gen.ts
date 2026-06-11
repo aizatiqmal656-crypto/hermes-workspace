@@ -42,6 +42,7 @@ import { Route as ChatSessionKeyRouteImport } from './routes/chat/$sessionKey'
 import { Route as ApiWorkspaceRouteImport } from './routes/api/workspace'
 import { Route as ApiVtCapitalRouteImport } from './routes/api/vt-capital'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
+import { Route as ApiTiktokMemoryRouteImport } from './routes/api/tiktok-memory'
 import { Route as ApiTerminalStreamRouteImport } from './routes/api/terminal-stream'
 import { Route as ApiTerminalResizeRouteImport } from './routes/api/terminal-resize'
 import { Route as ApiTerminalInputRouteImport } from './routes/api/terminal-input'
@@ -335,6 +336,11 @@ const ApiVtCapitalRoute = ApiVtCapitalRouteImport.update({
 const ApiTranscribeRoute = ApiTranscribeRouteImport.update({
   id: '/api/transcribe',
   path: '/api/transcribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTiktokMemoryRoute = ApiTiktokMemoryRouteImport.update({
+  id: '/api/tiktok-memory',
+  path: '/api/tiktok-memory',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTerminalStreamRoute = ApiTerminalStreamRouteImport.update({
@@ -1089,6 +1095,7 @@ export interface FileRoutesByFullPath {
   '/api/terminal-input': typeof ApiTerminalInputRoute
   '/api/terminal-resize': typeof ApiTerminalResizeRoute
   '/api/terminal-stream': typeof ApiTerminalStreamRoute
+  '/api/tiktok-memory': typeof ApiTiktokMemoryRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/vt-capital': typeof ApiVtCapitalRoute
   '/api/workspace': typeof ApiWorkspaceRoute
@@ -1252,6 +1259,7 @@ export interface FileRoutesByTo {
   '/api/terminal-input': typeof ApiTerminalInputRoute
   '/api/terminal-resize': typeof ApiTerminalResizeRoute
   '/api/terminal-stream': typeof ApiTerminalStreamRoute
+  '/api/tiktok-memory': typeof ApiTiktokMemoryRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/vt-capital': typeof ApiVtCapitalRoute
   '/api/workspace': typeof ApiWorkspaceRoute
@@ -1417,6 +1425,7 @@ export interface FileRoutesById {
   '/api/terminal-input': typeof ApiTerminalInputRoute
   '/api/terminal-resize': typeof ApiTerminalResizeRoute
   '/api/terminal-stream': typeof ApiTerminalStreamRoute
+  '/api/tiktok-memory': typeof ApiTiktokMemoryRoute
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/vt-capital': typeof ApiVtCapitalRoute
   '/api/workspace': typeof ApiWorkspaceRoute
@@ -1583,6 +1592,7 @@ export interface FileRouteTypes {
     | '/api/terminal-input'
     | '/api/terminal-resize'
     | '/api/terminal-stream'
+    | '/api/tiktok-memory'
     | '/api/transcribe'
     | '/api/vt-capital'
     | '/api/workspace'
@@ -1746,6 +1756,7 @@ export interface FileRouteTypes {
     | '/api/terminal-input'
     | '/api/terminal-resize'
     | '/api/terminal-stream'
+    | '/api/tiktok-memory'
     | '/api/transcribe'
     | '/api/vt-capital'
     | '/api/workspace'
@@ -1910,6 +1921,7 @@ export interface FileRouteTypes {
     | '/api/terminal-input'
     | '/api/terminal-resize'
     | '/api/terminal-stream'
+    | '/api/tiktok-memory'
     | '/api/transcribe'
     | '/api/vt-capital'
     | '/api/workspace'
@@ -2075,6 +2087,7 @@ export interface RootRouteChildren {
   ApiTerminalInputRoute: typeof ApiTerminalInputRoute
   ApiTerminalResizeRoute: typeof ApiTerminalResizeRoute
   ApiTerminalStreamRoute: typeof ApiTerminalStreamRoute
+  ApiTiktokMemoryRoute: typeof ApiTiktokMemoryRoute
   ApiTranscribeRoute: typeof ApiTranscribeRoute
   ApiVtCapitalRoute: typeof ApiVtCapitalRoute
   ApiWorkspaceRoute: typeof ApiWorkspaceRoute
@@ -2342,6 +2355,13 @@ declare module '@tanstack/react-router' {
       path: '/api/transcribe'
       fullPath: '/api/transcribe'
       preLoaderRoute: typeof ApiTranscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tiktok-memory': {
+      id: '/api/tiktok-memory'
+      path: '/api/tiktok-memory'
+      fullPath: '/api/tiktok-memory'
+      preLoaderRoute: typeof ApiTiktokMemoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/terminal-stream': {
@@ -3560,6 +3580,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTerminalInputRoute: ApiTerminalInputRoute,
   ApiTerminalResizeRoute: ApiTerminalResizeRoute,
   ApiTerminalStreamRoute: ApiTerminalStreamRoute,
+  ApiTiktokMemoryRoute: ApiTiktokMemoryRoute,
   ApiTranscribeRoute: ApiTranscribeRoute,
   ApiVtCapitalRoute: ApiVtCapitalRoute,
   ApiWorkspaceRoute: ApiWorkspaceRoute,

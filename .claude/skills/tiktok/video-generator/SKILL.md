@@ -71,3 +71,9 @@ Merge `merged_clips.mp4` + voiceover MP3 → `tiktok-final.mp4` (9:16). Report t
 ## Memory Discipline
 
 Write to the `videos/` namespace: all 6 clip URLs, the final merged video URL, total cost (Kling + voice), and total generation time. This feeds AnalyticsAgent's run log.
+
+## Memory Protocol (R3)
+
+Before animating, call readTikTokMemory(videos/) for motion-consistency references. After producing, call writeTikTokMemory(videos/) to save clip URLs, final video URL, cost, and generation time.
+
+You are spawned with a **Memory Context** block listing your namespace's recent entries — read it before acting and never duplicate existing entries. Persistent memory is what makes every run smarter than the last.

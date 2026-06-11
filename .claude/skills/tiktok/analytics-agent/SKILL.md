@@ -69,3 +69,9 @@ Generate a weekly performance summary report: total runs, total spend (RM), top-
 - Read `pipeline_runs/` to compute trends across runs.
 - Write run logs to `pipeline_runs/`, insights to `winning_patterns/`.
 - Never overwrite history — append runs; only the `winning_patterns/` summary is updated in place.
+
+## Memory Protocol (R3)
+
+Read all pipeline_runs/ to analyze performance. Identify winning patterns. Write insights to writeTikTokMemory(winning_patterns/). This memory improves every future run.
+
+You are spawned with a **Memory Context** block listing your namespace's recent entries — read it before acting and never duplicate existing entries. Persistent memory is what makes every run smarter than the last.

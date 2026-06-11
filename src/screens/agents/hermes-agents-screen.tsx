@@ -157,10 +157,12 @@ function AgentCard({
   agent,
   runtime,
   onSpawn,
+  onViewMemory,
 }: {
   agent: HermesTikTokAgentPreset
   runtime: AgentRuntime
   onSpawn: (agent: HermesTikTokAgentPreset) => void
+  onViewMemory: (agent: HermesTikTokAgentPreset) => void
 }) {
   const busy = runtime.status === 'spawning' || runtime.status === 'running'
   return (
@@ -223,28 +225,50 @@ function AgentCard({
         </div>
       </div>
 
-      {/* Spawn button */}
-      <button
-        onClick={() => onSpawn(agent)}
-        disabled={busy}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 6,
-          padding: '8px 14px',
-          borderRadius: 8,
-          border: 'none',
-          background: busy ? '#F4F4F2' : agent.color,
-          color: busy ? T.ink3 : '#fff',
-          fontSize: 13,
-          fontWeight: 600,
-          cursor: busy ? 'not-allowed' : 'pointer',
-          transition: 'filter 0.15s',
-        }}
-      >
-        {busy ? 'Working…' : '▶ Spawn Agent'}
-      </button>
+      {/* Action buttons */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          onClick={() => onSpawn(agent)}
+          disabled={busy}
+          style={{
+            flex: 1,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '8px 14px',
+            borderRadius: 8,
+            border: 'none',
+            background: busy ? '#F4F4F2' : agent.color,
+            color: busy ? T.ink3 : '#fff',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: busy ? 'not-allowed' : 'pointer',
+            transition: 'filter 0.15s',
+          }}
+        >
+          {busy ? 'Working…' : '▶ Spawn Agent'}
+        </button>
+        <button
+          onClick={() => onViewMemory(agent)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: `1px solid ${T.border}`,
+            background: T.card,
+            color: T.ink2,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          🧠 Memory
+        </button>
+      </div>
     </Card>
   )
 }
@@ -345,6 +369,88 @@ export function HermesAgentsScreen() {
     },
     [product, setRuntime, pollMission],
   )
+
+  // ── Memory viewer (Phase R3) ──
+  const [memoryAgent, setMemoryAgent] = useState<HermesTikTokAgentPreset | null>(null)
+  const [memoryEntries, setMemoryEntries] = useState<
+    Array<{ key: string; timestamp: string; agentId: string; data: Record<string, unknown> }>
+  >([])
+  const [memoryTotal, setMemoryTotal] = useState(0)
+  const [memoryLoading, setMemoryLoading] = useState(false)
+  const [clearing, setClearing] = useState(false)
+
+  // On mount: verify the 8 memory namespaces exist (server logs status).
+  useEffect(() => {
+    void fetch('/api/tiktok-memory?action=status', { credentials: 'same-origin' })
+      .then((r) => r.json())
+      .then((d: { ok?: boolean; namespaces?: Array<unknown> }) => {
+        if (d?.ok) console.log('[Agents] memory namespaces verified:', d.namespaces?.length ?? 0)
+      })
+      .catch(() => {})
+  }, [])
+
+  const loadAgentMemory = useCallback(async (agent: HermesTikTokAgentPreset) => {
+    setMemoryLoading(true)
+    try {
+      const ns = agent.memoryNamespace.replace(/\/$/, '')
+      const res = await fetch(`/api/tiktok-memory?namespace=${encodeURIComponent(ns)}&limit=5`, {
+        credentials: 'same-origin',
+      })
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean
+        total?: number
+        entries?: Array<{ key: string; timestamp: string; agentId: string; data: Record<string, unknown> }>
+      }
+      if (res.ok && data.ok) {
+        setMemoryEntries(Array.isArray(data.entries) ? data.entries : [])
+        setMemoryTotal(data.total ?? 0)
+      } else {
+        setMemoryEntries([])
+        setMemoryTotal(0)
+      }
+    } catch {
+      setMemoryEntries([])
+      setMemoryTotal(0)
+    } finally {
+      setMemoryLoading(false)
+    }
+  }, [])
+
+  const openMemory = useCallback(
+    (agent: HermesTikTokAgentPreset) => {
+      setMemoryAgent(agent)
+      setMemoryEntries([])
+      setMemoryTotal(0)
+      void loadAgentMemory(agent)
+    },
+    [loadAgentMemory],
+  )
+
+  const clearMemory = useCallback(async () => {
+    if (!memoryAgent) return
+    if (
+      typeof window !== 'undefined' &&
+      !window.confirm(
+        `Clear all memory for ${memoryAgent.name} (${memoryAgent.memoryNamespace})? This cannot be undone.`,
+      )
+    )
+      return
+    setClearing(true)
+    try {
+      const ns = memoryAgent.memoryNamespace.replace(/\/$/, '')
+      await fetch('/api/tiktok-memory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ op: 'clear', namespace: ns }),
+      })
+      await loadAgentMemory(memoryAgent)
+    } catch {
+      /* non-fatal */
+    } finally {
+      setClearing(false)
+    }
+  }, [memoryAgent, loadAgentMemory])
 
   const runningCount = Object.values(runtimes).filter(
     (r) => r.status === 'running' || r.status === 'spawning',
@@ -496,9 +602,114 @@ export function HermesAgentsScreen() {
             agent={agent}
             runtime={runtimes[agent.id]}
             onSpawn={handleSpawn}
+            onViewMemory={openMemory}
           />
         ))}
       </div>
+
+      {/* ── Memory viewer modal ──────────────────────────────────────── */}
+      {memoryAgent && (
+        <div
+          onClick={() => setMemoryAgent(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(17,17,17,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+            zIndex: 50,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: T.card,
+              border: `1px solid ${T.border}`,
+              borderRadius: 14,
+              boxShadow: '0 12px 40px rgba(17,17,17,0.18)',
+              width: '100%',
+              maxWidth: 520,
+              maxHeight: '80vh',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Modal header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '18px 20px', borderBottom: `1px solid ${T.border}` }}>
+              <div
+                style={{
+                  width: 40, height: 40, borderRadius: 9, background: memoryAgent.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 18, flexShrink: 0,
+                }}
+              >
+                {memoryAgent.avatar}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: T.ink }}>{memoryAgent.name} — Memory</div>
+                <div style={{ fontSize: 12, color: T.ink2, marginTop: 2 }}>
+                  namespace <code style={{ color: memoryAgent.color }}>{memoryAgent.memoryNamespace}</code> · {memoryTotal} total {memoryTotal === 1 ? 'entry' : 'entries'}
+                </div>
+              </div>
+              <button
+                onClick={() => setMemoryAgent(null)}
+                style={{ border: 'none', background: 'transparent', fontSize: 20, lineHeight: 1, color: T.ink3, cursor: 'pointer', padding: 2 }}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal body — last 5 entries */}
+            <div style={{ padding: '14px 20px', overflowY: 'auto', flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: T.ink3, marginBottom: 10 }}>
+                Last 5 entries
+              </div>
+              {memoryLoading ? (
+                <div style={{ fontSize: 13, color: T.ink3 }}>Loading memory…</div>
+              ) : memoryEntries.length === 0 ? (
+                <div style={{ fontSize: 13, color: T.ink3 }}>No memory entries yet for this agent.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {memoryEntries.map((entry) => (
+                    <div key={entry.key} style={{ border: `1px solid ${T.border}`, borderRadius: 9, padding: '10px 12px', background: T.bg }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: T.ink }}>{entry.key}</span>
+                        <span style={{ fontSize: 11, color: T.ink3, flexShrink: 0 }}>
+                          {entry.timestamp ? new Date(entry.timestamp).toLocaleString() : '—'}
+                        </span>
+                      </div>
+                      <pre style={{ margin: 0, fontSize: 11, color: T.ink2, whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 120, overflow: 'auto' }}>
+                        {JSON.stringify(entry.data, null, 2).slice(0, 600)}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal footer — clear */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderTop: `1px solid ${T.border}` }}>
+              <span style={{ fontSize: 11.5, color: T.ink3 }}>Shared namespace memory · persists between runs</span>
+              <button
+                onClick={() => void clearMemory()}
+                disabled={clearing || memoryTotal === 0}
+                style={{
+                  fontSize: 12.5, fontWeight: 600, padding: '7px 14px', borderRadius: 8,
+                  border: '1px solid #FBCFCF', background: clearing || memoryTotal === 0 ? '#F4F4F2' : '#FEF2F2',
+                  color: clearing || memoryTotal === 0 ? T.ink3 : '#B91C1C',
+                  cursor: clearing || memoryTotal === 0 ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {clearing ? 'Clearing…' : 'Clear Memory'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

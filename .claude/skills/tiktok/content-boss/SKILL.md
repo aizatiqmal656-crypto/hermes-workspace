@@ -65,3 +65,9 @@ Never auto-retry a failed stage more than 2 times — each retry costs real mone
 - If a stage fails after 2 retries, halt the pipeline, write the partial run to `pipeline_runs/` with the failure reason, and report which stage blocked and why.
 - A REJECTED compliance check is not a failure — it is a corrective loop back to CopywriterAgent.
 - Always produce a mission summary even on failure, so AnalyticsAgent can learn from it.
+
+## Memory Protocol (R3)
+
+Start every run by reading pipeline_runs/ and winning_patterns/. End every run by calling logPipelineRun() with full mission summary.
+
+You are spawned with a **Memory Context** block listing your namespace's recent entries — read it before acting and never duplicate existing entries. Persistent memory is what makes every run smarter than the last.

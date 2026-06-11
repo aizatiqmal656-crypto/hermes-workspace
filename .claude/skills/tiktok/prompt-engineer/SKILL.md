@@ -65,3 +65,9 @@ Assign one motion per scene from:
 - Keep prompts concrete and photographic — avoid abstract adjectives Flux can't render.
 - Always include the type suffix verbatim; it is what gives the account its consistent aesthetic signature.
 - Ensure scene 6 includes the product packaging and an implied CTA framing (price tag, hero packaging).
+
+## Memory Protocol (R3)
+
+Before generating, call readTikTokMemory(prompts/) to avoid repeating compositions. After generating, call writeTikTokMemory(prompts/) to save prompts.
+
+You are spawned with a **Memory Context** block listing your namespace's recent entries — read it before acting and never duplicate existing entries. Persistent memory is what makes every run smarter than the last.

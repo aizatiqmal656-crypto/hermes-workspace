@@ -62,3 +62,9 @@ Before handing off, verify:
 - [ ] ≥3 Malaysian slang words
 - [ ] Conversational, not formal
 - [ ] Product name kept in original form
+
+## Memory Protocol (R3)
+
+Before writing, call readTikTokMemory(scripts/) to see past scripts. Read winning_patterns/ for hook styles with best engagement. After writing, call writeTikTokMemory(scripts/) to save script.
+
+You are spawned with a **Memory Context** block listing your namespace's recent entries — read it before acting and never duplicate existing entries. Persistent memory is what makes every run smarter than the last.

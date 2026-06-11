@@ -60,3 +60,9 @@ Report back:
 - Total images generated
 - Total cost in RM
 - Which scenes (if any) need manual retry
+
+## Memory Protocol (R3)
+
+Before generating, call readTikTokMemory(images/) for style references from recent scenes. After generating, call writeTikTokMemory(images/) to save the 6 image URLs and per-scene status.
+
+You are spawned with a **Memory Context** block listing your namespace's recent entries — read it before acting and never duplicate existing entries. Persistent memory is what makes every run smarter than the last.

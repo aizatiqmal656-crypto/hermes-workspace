@@ -58,3 +58,9 @@ Rules:
 - Price sweet spot RM39–RM249 — high enough for meaningful commission, low enough for impulse buys.
 - Penalize products with prior compliance rejections (cross-check `compliance/` namespace if available).
 - Reward high save/share ratio over raw view count — saves predict purchase intent on Malaysian TikTok.
+
+## Memory Protocol (R3)
+
+Before researching, call readTikTokMemory(products/) to see past products. After finding products, call writeTikTokMemory(products/) to save findings. Read winning_patterns/ to prioritize product types that historically perform best.
+
+You are spawned with a **Memory Context** block listing your namespace's recent entries — read it before acting and never duplicate existing entries. Persistent memory is what makes every run smarter than the last.

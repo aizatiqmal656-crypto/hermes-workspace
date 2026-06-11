@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { cn } from '@/lib/utils'
 import type { FFmpeg } from '@ffmpeg/ffmpeg'
@@ -441,6 +441,89 @@ export function TikTokScreen() {
     setSceneVideos((prev) => prev.map((s, i) => (i === idx ? { ...s, ...update } : s)))
   }, [])
 
+  // ── Persistent memory (Phase R3) ──
+  const [memorySaved, setMemorySaved] = useState(false)
+  const [memorySaving, setMemorySaving] = useState(false)
+  const [showMemory, setShowMemory] = useState(false)
+  const [memoryLoading, setMemoryLoading] = useState(false)
+  const [memoryRuns, setMemoryRuns] = useState<
+    Array<{ key: string; timestamp: string; data: Record<string, unknown> }>
+  >([])
+
+  // On mount: verify the 8 memory namespaces exist (server logs status).
+  useEffect(() => {
+    void fetch('/api/tiktok-memory?action=status', { credentials: 'same-origin' })
+      .then((r) => r.json())
+      .then((d: { ok?: boolean; namespaces?: Array<unknown> }) => {
+        if (d?.ok) console.log('[TikTok] memory namespaces verified:', d.namespaces?.length ?? 0)
+      })
+      .catch(() => {})
+  }, [])
+
+  // After a successful pipeline, log the full run to pipeline_runs/ memory.
+  const logRunToMemory = useCallback(async () => {
+    setMemorySaving(true)
+    try {
+      const imagesDone = sceneImages.filter((s) => s.url !== null).length
+      const videosDone = sceneVideos.filter((s) => s.url !== null).length
+      const costRm = Number((0.1 + imagesDone * 0.014 + videosDone * 0.65 + 0.05).toFixed(2))
+      const runData = {
+        product: product?.name ?? 'Unknown product',
+        price: product?.price ?? null,
+        trendScore: product?.trendScore ?? null,
+        script: script ? { hook: script.hook, body: script.body, cta: script.cta } : null,
+        scenes: storyboard?.length ?? 0,
+        imagesReady: imagesDone,
+        videosReady: videosDone,
+        costRm,
+        success: true,
+        finalVideo: 'tiktok-final.mp4',
+        completedAt: new Date().toISOString(),
+      }
+      const res = await fetch('/api/tiktok-memory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ op: 'logRun', runData }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean }
+      if (res.ok && data.ok) {
+        setMemorySaved(true)
+        console.log('[TikTok] pipeline run saved to memory', runData)
+      }
+    } catch (err) {
+      console.warn('[TikTok] memory log failed:', err instanceof Error ? err.message : String(err))
+    } finally {
+      setMemorySaving(false)
+    }
+  }, [product, script, storyboard, sceneImages, sceneVideos])
+
+  const loadMemoryRuns = useCallback(async () => {
+    setMemoryLoading(true)
+    try {
+      const res = await fetch('/api/tiktok-memory?namespace=pipeline_runs&limit=5', {
+        credentials: 'same-origin',
+      })
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean
+        entries?: Array<{ key: string; timestamp: string; data: Record<string, unknown> }>
+      }
+      if (res.ok && data.ok && Array.isArray(data.entries)) setMemoryRuns(data.entries)
+    } catch {
+      /* non-fatal — keep prior list */
+    } finally {
+      setMemoryLoading(false)
+    }
+  }, [])
+
+  const toggleMemory = useCallback(() => {
+    setShowMemory((prev) => {
+      const next = !prev
+      if (next) void loadMemoryRuns()
+      return next
+    })
+  }, [loadMemoryRuns])
+
   // -------------------------------------------------------------------------
   // Pipeline runner
   // -------------------------------------------------------------------------
@@ -459,6 +542,7 @@ export function TikTokScreen() {
     setSceneVideos(Array.from({ length: 6 }, EMPTY_SCENE_VIDEO))
     setMergedClipsUrl(null)
     setMergeClipsError(null)
+    setMemorySaved(false)
     setVoiceUrl(null)
     setVoiceError(null)
     voiceBytesRef.current = null
@@ -933,6 +1017,7 @@ export function TikTokScreen() {
         URL.createObjectURL(new Blob([data as Uint8Array<ArrayBuffer>], { type: 'video/mp4' })),
       )
       setMergeProgress('')
+      void logRunToMemory()
 
       await ff.deleteFile('video.mp4').catch(() => {})
       await ff.deleteFile('audio.mp3').catch(() => {})
@@ -943,7 +1028,7 @@ export function TikTokScreen() {
     } finally {
       setMerging(false)
     }
-  }, [mergedClipsUrl, mergedVideoUrl])
+  }, [mergedClipsUrl, mergedVideoUrl, logRunToMemory])
 
   // ── Derived counts ──
   const imagesReady = sceneImages.filter((s) => s.url !== null).length
@@ -1370,6 +1455,46 @@ export function TikTokScreen() {
                           <a href={mergedVideoUrl} download="tiktok-final.mp4" style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12.5, padding:'7px 16px', borderRadius:8, border:'none', background:T.accent, color:'#fff', textDecoration:'none', fontWeight:600, boxShadow:'0 1px 2px rgba(245,158,11,0.4)' }}>⬇ Download Final MP4</a>
                           <button onClick={() => { if (mergedVideoUrl) URL.revokeObjectURL(mergedVideoUrl); setMergedVideoUrl(null); setMergeError(null); }} style={{ fontSize:12.5, padding:'7px 14px', borderRadius:8, border:`1px solid ${T.border}`, background:T.card, color:T.ink2, cursor:'pointer', fontWeight:500 }}>Re-merge</button>
                         </div>
+
+                        {/* ── Memory (R3) ── */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
+                          {memorySaving ? (
+                            <span style={{ fontSize: 12.5, color: T.ink3 }}>Saving to memory…</span>
+                          ) : memorySaved ? (
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12.5, fontWeight:600, color:T.successInk, background:T.successSoft, border:`1px solid ${T.successLine}`, borderRadius:8, padding:'5px 10px' }}>Memory saved ✅</span>
+                          ) : null}
+                          <button onClick={toggleMemory} style={{ fontSize:12.5, padding:'6px 13px', borderRadius:8, border:`1px solid ${T.border}`, background:T.card, color:T.ink2, cursor:'pointer', fontWeight:600 }}>
+                            {showMemory ? 'Hide Memory' : '🧠 View Memory'}
+                          </button>
+                        </div>
+
+                        <AnimatePresence>
+                          {showMemory && (
+                            <motion.div key="memory-panel" initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} exit={{ opacity:0, height:0 }} style={{ overflow:'hidden' }}>
+                              <div style={{ border:`1px solid ${T.border}`, borderRadius:10, background:T.bg, padding:12, display:'flex', flexDirection:'column', gap:8 }}>
+                                <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:T.ink3 }}>
+                                  Last 5 pipeline runs · pipeline_runs/
+                                </div>
+                                {memoryLoading ? (
+                                  <span style={{ fontSize:12.5, color:T.ink3 }}>Loading memory…</span>
+                                ) : memoryRuns.length === 0 ? (
+                                  <span style={{ fontSize:12.5, color:T.ink3 }}>No runs saved yet — complete a pipeline to log one.</span>
+                                ) : (
+                                  memoryRuns.map((run) => {
+                                    const d = run.data ?? {}
+                                    const when = run.timestamp ? new Date(run.timestamp).toLocaleString() : '—'
+                                    return (
+                                      <div key={run.key} style={{ borderTop:`1px solid ${T.border}`, paddingTop:8, fontSize:12.5, color:T.ink2 }}>
+                                        <div style={{ fontWeight:600, color:T.ink }}>{String(d.product ?? 'Run')} {d.costRm != null && <span style={{ color:T.ink3, fontWeight:400 }}>· RM{String(d.costRm)}</span>}</div>
+                                        <div style={{ color:T.ink3, fontSize:11.5 }}>{when} · {String(d.imagesReady ?? 0)} imgs · {String(d.videosReady ?? 0)} vids · {d.success ? 'success' : 'partial'}</div>
+                                      </div>
+                                    )
+                                  })
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </motion.div>
                     )}
                   </AnimatePresence>
