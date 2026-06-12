@@ -805,7 +805,7 @@ export async function probeGateway(options?: {
       probe('/v1/models'),
       probe('/api/sessions'),
       probeEnhancedChatStream(),
-      probe('/api/skills'),
+      probe('/api/skills').then((ok) => ok || probe('/v1/skills')),
       probe('/api/config'),
       probe('/api/jobs'),
       probeDashboard(),

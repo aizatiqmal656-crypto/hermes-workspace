@@ -364,9 +364,15 @@ async function fetchClaudeSkills(): Promise<Array<SkillSummary>> {
   const headers: Record<string, string> = {}
   if (BEARER_TOKEN) headers['Authorization'] = `Bearer ${BEARER_TOKEN}`
 
-  const response = capabilities.dashboard.available
-    ? await dashboardFetch('/api/skills')
-    : await fetch(`${CLAUDE_API}/api/skills`, { headers })
+  let response: Response
+  if (capabilities.dashboard.available) {
+    response = await dashboardFetch('/api/skills')
+  } else {
+    response = await fetch(`${CLAUDE_API}/api/skills`, { headers })
+    if (!response.ok) {
+      response = await fetch(`${CLAUDE_API}/v1/skills`, { headers })
+    }
+  }
   if (!response.ok) {
     const body = await response.text().catch(() => '')
     throw new Error(body || `Claude skills request failed (${response.status})`)
@@ -379,7 +385,9 @@ async function fetchClaudeSkills(): Promise<Array<SkillSummary>> {
       ? (asRecord(payload).items as Array<unknown>)
       : Array.isArray(asRecord(payload).skills)
         ? (asRecord(payload).skills as Array<unknown>)
-        : []
+        : Array.isArray(asRecord(payload).data)
+          ? (asRecord(payload).data as Array<unknown>)
+          : []
 
   return items
     .map((entry) => normalizeSkill(entry))
