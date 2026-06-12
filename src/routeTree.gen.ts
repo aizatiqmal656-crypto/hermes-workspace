@@ -118,6 +118,7 @@ import { Route as ApiAgentBusRouteImport } from './routes/api/agent-bus'
 import { Route as ApiUpdateWorkspaceRouteImport } from './routes/api/update/workspace'
 import { Route as ApiUpdateStatusRouteImport } from './routes/api/update/status'
 import { Route as ApiUpdateAgentRouteImport } from './routes/api/update/agent'
+import { Route as ApiTiktokVideoMissionIdRouteImport } from './routes/api/tiktok-video.$missionId'
 import { Route as ApiSwarmRuntimeResetRouteImport } from './routes/api/swarm-runtime.reset'
 import { Route as ApiSwarmMemorySearchRouteImport } from './routes/api/swarm-memory/search'
 import { Route as ApiSkillsUninstallRouteImport } from './routes/api/skills/uninstall'
@@ -719,6 +720,11 @@ const ApiUpdateAgentRoute = ApiUpdateAgentRouteImport.update({
   path: '/api/update/agent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTiktokVideoMissionIdRoute = ApiTiktokVideoMissionIdRouteImport.update({
+  id: '/api/tiktok-video/$missionId',
+  path: '/api/tiktok-video/$missionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSwarmRuntimeResetRoute = ApiSwarmRuntimeResetRouteImport.update({
   id: '/reset',
   path: '/reset',
@@ -1152,6 +1158,7 @@ export interface FileRoutesByFullPath {
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
   '/api/swarm-memory/search': typeof ApiSwarmMemorySearchRoute
   '/api/swarm-runtime/reset': typeof ApiSwarmRuntimeResetRoute
+  '/api/tiktok-video/$missionId': typeof ApiTiktokVideoMissionIdRoute
   '/api/update/agent': typeof ApiUpdateAgentRoute
   '/api/update/status': typeof ApiUpdateStatusRoute
   '/api/update/workspace': typeof ApiUpdateWorkspaceRoute
@@ -1316,6 +1323,7 @@ export interface FileRoutesByTo {
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
   '/api/swarm-memory/search': typeof ApiSwarmMemorySearchRoute
   '/api/swarm-runtime/reset': typeof ApiSwarmRuntimeResetRoute
+  '/api/tiktok-video/$missionId': typeof ApiTiktokVideoMissionIdRoute
   '/api/update/agent': typeof ApiUpdateAgentRoute
   '/api/update/status': typeof ApiUpdateStatusRoute
   '/api/update/workspace': typeof ApiUpdateWorkspaceRoute
@@ -1482,6 +1490,7 @@ export interface FileRoutesById {
   '/api/skills/uninstall': typeof ApiSkillsUninstallRoute
   '/api/swarm-memory/search': typeof ApiSwarmMemorySearchRoute
   '/api/swarm-runtime/reset': typeof ApiSwarmRuntimeResetRoute
+  '/api/tiktok-video/$missionId': typeof ApiTiktokVideoMissionIdRoute
   '/api/update/agent': typeof ApiUpdateAgentRoute
   '/api/update/status': typeof ApiUpdateStatusRoute
   '/api/update/workspace': typeof ApiUpdateWorkspaceRoute
@@ -1649,6 +1658,7 @@ export interface FileRouteTypes {
     | '/api/skills/uninstall'
     | '/api/swarm-memory/search'
     | '/api/swarm-runtime/reset'
+    | '/api/tiktok-video/$missionId'
     | '/api/update/agent'
     | '/api/update/status'
     | '/api/update/workspace'
@@ -1813,6 +1823,7 @@ export interface FileRouteTypes {
     | '/api/skills/uninstall'
     | '/api/swarm-memory/search'
     | '/api/swarm-runtime/reset'
+    | '/api/tiktok-video/$missionId'
     | '/api/update/agent'
     | '/api/update/status'
     | '/api/update/workspace'
@@ -1978,6 +1989,7 @@ export interface FileRouteTypes {
     | '/api/skills/uninstall'
     | '/api/swarm-memory/search'
     | '/api/swarm-runtime/reset'
+    | '/api/tiktok-video/$missionId'
     | '/api/update/agent'
     | '/api/update/status'
     | '/api/update/workspace'
@@ -2118,6 +2130,7 @@ export interface RootRouteChildren {
   ApiProfilesToggleSkillRoute: typeof ApiProfilesToggleSkillRoute
   ApiProfilesUpdateRoute: typeof ApiProfilesUpdateRoute
   ApiRunsActiveRoute: typeof ApiRunsActiveRoute
+  ApiTiktokVideoMissionIdRoute: typeof ApiTiktokVideoMissionIdRoute
   ApiUpdateAgentRoute: typeof ApiUpdateAgentRoute
   ApiUpdateStatusRoute: typeof ApiUpdateStatusRoute
   ApiUpdateWorkspaceRoute: typeof ApiUpdateWorkspaceRoute
@@ -2889,6 +2902,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiUpdateAgentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tiktok-video/$missionId': {
+      id: '/api/tiktok-video/$missionId'
+      path: '/api/tiktok-video/$missionId'
+      fullPath: '/api/tiktok-video/$missionId'
+      preLoaderRoute: typeof ApiTiktokVideoMissionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/swarm-runtime/reset': {
       id: '/api/swarm-runtime/reset'
       path: '/reset'
@@ -3611,6 +3631,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfilesToggleSkillRoute: ApiProfilesToggleSkillRoute,
   ApiProfilesUpdateRoute: ApiProfilesUpdateRoute,
   ApiRunsActiveRoute: ApiRunsActiveRoute,
+  ApiTiktokVideoMissionIdRoute: ApiTiktokVideoMissionIdRoute,
   ApiUpdateAgentRoute: ApiUpdateAgentRoute,
   ApiUpdateStatusRoute: ApiUpdateStatusRoute,
   ApiUpdateWorkspaceRoute: ApiUpdateWorkspaceRoute,
