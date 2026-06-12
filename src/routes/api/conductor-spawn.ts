@@ -774,14 +774,17 @@ export const Route = createFileRoute('/api/conductor-spawn')({
           // (TrendHunter → … → AnalyticsAgent) in the background; the UI polls
           // GET ?missionId=<id> for live status.
           if (agent && agent.id === 'content-boss') {
-            const product = readOptionalString(body.product) || 'AeroGlow LED Face Mask'
+            const productRaw = readOptionalString(body.product)
+            const product = productRaw || undefined
+            const autonomous = !product
             const pipelineMissionId = `pipeline-${Date.now()}`
             startFullPipeline(pipelineMissionId, product)
             return json({
               ok: true,
               mode: 'pipeline',
               missionId: pipelineMissionId,
-              product,
+              product: product ?? 'autonomous',
+              autonomous,
               agent: { id: agent.id, name: agent.name },
             })
           }

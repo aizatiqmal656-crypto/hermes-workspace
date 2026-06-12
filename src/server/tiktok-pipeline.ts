@@ -292,9 +292,11 @@ async function runStage(
   return false
 }
 
-/** The full autonomous pipeline. Runs in the background; updates the mission. */
-export function startFullPipeline(missionId: string, product: string): PipelineMission {
-  const m = newMission(missionId, product)
+/** The full autonomous pipeline. Runs in the background; updates the mission.
+ * @param product — if omitted, TrendHunter discovers the trending product autonomously.
+ */
+export function startFullPipeline(missionId: string, product?: string): PipelineMission {
+  const m = newMission(missionId, product || 'Searching...')
   void runFullPipeline(m).catch((err) => {
     m.status = 'failed'
     m.error = err instanceof Error ? err.message : String(err)
@@ -306,17 +308,28 @@ export function startFullPipeline(missionId: string, product: string): PipelineM
 }
 
 async function runFullPipeline(m: PipelineMission): Promise<void> {
-  const product = m.product
+  const inputProduct = m.product === 'Searching...' ? '' : m.product
+  const autonomous = !inputProduct
 
   // ── Stage 1: TrendHunter — web_search ──────────────────────────────────
   await runStage(m, 'trend-hunter', async () => {
-    const exec = await executeTool('web_search', { category: product, market: 'Malaysia' })
+    const query = autonomous ? 'trending affiliate' : inputProduct
+    const exec = await executeTool('web_search', { category: query, market: 'Malaysia' })
     const products = (exec.result as { products?: Array<{ name: string; price_rm?: string; trend_score?: number; viral_reason?: string }> } | undefined)?.products ?? []
-    const pick = products.find((p) => p.name.toLowerCase().includes(product.toLowerCase().split(' ')[0] ?? '')) ?? products[0]
-    const chosen = pick ?? { name: product, price_rm: undefined, trend_score: undefined, viral_reason: undefined }
+    let chosen: { name: string; price_rm?: string; trend_score?: number; viral_reason?: string }
+    if (autonomous) {
+      // Fully autonomous: pick the top trending product
+      chosen = products[0] ?? { name: 'Serum Vitamin C RM49', price_rm: 'RM49', trend_score: 80, viral_reason: 'viral skincare' }
+    } else {
+      // Product provided: find details for the specific product
+      const first = inputProduct.toLowerCase().split(' ')[0] ?? ''
+      chosen = products.find((p) => p.name.toLowerCase().includes(first)) ?? products[0] ?? { name: inputProduct }
+    }
     m.outputs.product = { name: chosen.name, price: chosen.price_rm, trendScore: chosen.trend_score, viralReason: chosen.viral_reason }
+    m.product = chosen.name
     writeTikTokMemory('trend-hunter', 'products', `pick-${Date.now()}`, m.outputs.product)
-    return { ok: exec.ok, output: `Picked ${chosen.name} (score ${chosen.trend_score ?? '?'})`, costRm: exec.costRm }
+    const verb = autonomous ? 'Found' : 'Picked'
+    return { ok: exec.ok, output: `${verb} ${chosen.name} (score ${chosen.trend_score ?? '?'})`, costRm: exec.costRm }
   })
 
   const productName = m.outputs.product?.name ?? product

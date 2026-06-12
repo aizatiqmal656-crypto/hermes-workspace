@@ -468,7 +468,7 @@ export function TikTokScreen() {
   }, [])
 
   // ── Autonomous pipeline (Phase R5) ──
-  const [productInput, setProductInput] = useState('AeroGlow LED Face Mask')
+  const [manualProduct, setManualProduct] = useState('')
   const [pipelineCost, setPipelineCost] = useState(0)
   const [pipelineAgents, setPipelineAgents] = useState<
     Array<{ id: string; name: string; status: string; error: string | null; costRm: number }>
@@ -616,7 +616,7 @@ export function TikTokScreen() {
     }
   }, [])
 
-  const runPipeline = useCallback(async () => {
+  const runPipeline = useCallback(async (product?: string) => {
     pipelineCancelRef.current = false
     setStatus('running')
     setActiveAgentIdx(0)
@@ -648,7 +648,7 @@ export function TikTokScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ agentId: 'content-boss', product: productInput }),
+        body: JSON.stringify({ agentId: 'content-boss', ...(product ? { product } : {}) }),
       })
       const data = (await res.json().catch(() => ({}))) as { ok?: boolean; missionId?: string; error?: string }
       if (!res.ok || !data.ok || !data.missionId) {
@@ -694,7 +694,13 @@ export function TikTokScreen() {
     setPipelineError('Pipeline timed out')
     setStatus('error')
     setActiveAgentIdx(-1)
-  }, [productInput, applyPipelineMission])
+  }, [applyPipelineMission])
+
+  const runAutoPipeline = useCallback(() => { void runPipeline() }, [runPipeline])
+  const runManualPipeline = useCallback(() => {
+    const p = manualProduct.trim()
+    if (p) void runPipeline(p)
+  }, [runPipeline, manualProduct])
 
   // -------------------------------------------------------------------------
   // Storyboard generation via /api/generate-storyboard (server → Claude API)
@@ -1212,25 +1218,46 @@ export function TikTokScreen() {
               right={isRunning || isDone || pipelineCost > 0 ? `RM${pipelineCost.toFixed(2)} spent` : undefined}
             />
             <p style={{ margin: 0, fontSize: 13.5, color: T.ink2 }}>
-              ContentBoss runs the full autonomous pipeline: TrendHunter → CopywriterAgent → ComplianceAgent → PromptEngineerAgent → ImageGeneratorAgent → VideoGeneratorAgent → AnalyticsAgent.
+              Runs the full 8-agent content pipeline — TrendHunter finds today's viral product automatically, or target a specific product below.
             </p>
 
-            {/* Product input */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label htmlFor="tt-product" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: T.ink3 }}>
-                Product
-              </label>
-              <input
-                id="tt-product"
-                value={productInput}
-                onChange={(e) => setProductInput(e.target.value)}
-                disabled={isRunning}
-                placeholder="e.g. AeroGlow LED Face Mask"
-                style={{ width: '100%', maxWidth: 420, padding: '8px 12px', borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13.5, color: T.ink, background: isRunning ? T.bg : '#fff', outline: 'none' }}
-              />
+            {/* Mode A — Fully Autonomous */}
+            <RunBtn running={isRunning} onClick={runAutoPipeline} />
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ flex: 1, height: 1, background: T.border }} />
+              <span style={{ fontSize: 11, color: T.ink3, whiteSpace: 'nowrap' }}>OR target a specific product</span>
+              <div style={{ flex: 1, height: 1, background: T.border }} />
             </div>
 
-            <RunBtn running={isRunning} onClick={runPipeline} />
+            {/* Mode B — Manual Product */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <input
+                id="tt-product"
+                value={manualProduct}
+                onChange={(e) => setManualProduct(e.target.value)}
+                disabled={isRunning}
+                placeholder="Enter product name e.g. Serum Vitamin C RM49"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13.5, color: T.ink, background: isRunning ? T.bg : '#fff', outline: 'none', boxSizing: 'border-box' }}
+              />
+              <button
+                onClick={runManualPipeline}
+                disabled={isRunning || !manualProduct.trim()}
+                style={{
+                  width: '100%', padding: '10px 16px', fontSize: 13.5, fontWeight: 600,
+                  borderRadius: 10, cursor: (isRunning || !manualProduct.trim()) ? 'default' : 'pointer',
+                  color: (isRunning || !manualProduct.trim()) ? T.ink3 : T.accent,
+                  background: 'transparent',
+                  border: `2px solid ${(isRunning || !manualProduct.trim()) ? T.border : T.accent}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  transition: 'border-color .15s, color .15s',
+                }}
+              >
+                <svg viewBox="0 0 16 16" width={14} height={14} fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg>
+                Run for This Product
+              </button>
+            </div>
 
             {sessionKey && (
               <p style={{ margin: 0, fontSize: 11, color: T.ink3 }}>
