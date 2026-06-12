@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy Policy — HermesTikTok</title>
+  <title>Privacy Policy — ContentBoss Studio</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #080f09;
-      --surface:   #0d1a0f;
-      --border:    rgba(0, 255, 65, 0.18);
-      --accent:    #00ff41;
-      --accent-dim:#7cff9b;
-      --text:      #d8ffe3;
-      --muted:     rgba(216, 255, 227, 0.55);
-      --danger:    #ff5f6d;
+      --bg:          #0a0a0c;
+      --surface:     #111116;
+      --border:      rgba(245,158,11,0.18);
+      --border-soft: rgba(255,255,255,0.06);
+      --accent:      #F59E0B;
+      --accent-dim:  #FCD34D;
+      --accent-soft: rgba(245,158,11,0.08);
+      --text:        #f4f4f6;
+      --muted:       rgba(244,244,246,0.55);
     }
 
     body {
@@ -26,14 +27,17 @@
       min-height: 100vh;
     }
 
+    a { color: var(--accent-dim); text-decoration: none; }
+    a:hover { color: var(--accent); text-decoration: underline; }
+
     header {
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--border-soft);
       background: var(--surface);
       padding: 20px 0;
     }
 
     header .inner {
-      max-width: 800px;
+      max-width: 860px;
       margin: 0 auto;
       padding: 0 24px;
       display: flex;
@@ -50,43 +54,37 @@
       text-decoration: none;
     }
 
-    .logo-mark {
-      width: 32px;
-      height: 32px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      color: #000;
-      font-weight: 900;
-      flex-shrink: 0;
-    }
+    .logo-icon { width: 32px; height: 32px; flex-shrink: 0; }
 
-    .logo-text {
-      font-size: 18px;
+    .logo-name {
+      font-size: 16px;
       font-weight: 700;
       color: var(--text);
       letter-spacing: -0.3px;
     }
 
-    .logo-text span { color: var(--accent); }
+    .logo-name span { color: var(--accent); }
+
+    nav { display: flex; gap: 6px; flex-wrap: wrap; }
 
     nav a {
       color: var(--muted);
       text-decoration: none;
-      font-size: 14px;
-      transition: color 0.15s;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
     }
 
-    nav a:hover, nav a.active { color: var(--accent); }
-    nav { display: flex; gap: 20px; }
+    nav a:hover { color: var(--accent); text-decoration: none; }
+    nav a.active { color: var(--accent); border-color: var(--border); background: var(--accent-soft); }
 
     main {
-      max-width: 800px;
-      margin: 48px auto;
-      padding: 0 24px 80px;
+      max-width: 860px;
+      margin: 52px auto;
+      padding: 0 24px 96px;
     }
 
     .page-header { margin-bottom: 40px; }
@@ -102,6 +100,7 @@
       border-radius: 4px;
       padding: 3px 10px;
       margin-bottom: 14px;
+      background: var(--accent-soft);
     }
 
     h1 {
@@ -116,7 +115,7 @@
 
     .divider {
       height: 1px;
-      background: var(--border);
+      background: var(--border-soft);
       margin: 32px 0;
     }
 
@@ -149,13 +148,20 @@
 
     li { margin-bottom: 6px; }
 
-    a { color: var(--accent-dim); text-decoration: none; }
-    a:hover { color: var(--accent); text-decoration: underline; }
+    code {
+      font-family: "SF Mono", ui-monospace, monospace;
+      font-size: 13px;
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.15);
+      border-radius: 4px;
+      padding: 1px 5px;
+      color: var(--accent-dim);
+    }
 
     .highlight-box {
       border: 1px solid var(--border);
       border-left: 3px solid var(--accent);
-      background: rgba(0, 255, 65, 0.04);
+      background: var(--accent-soft);
       border-radius: 8px;
       padding: 16px 20px;
       margin: 16px 0;
@@ -173,7 +179,7 @@
     th {
       text-align: left;
       padding: 10px 14px;
-      background: rgba(0, 255, 65, 0.06);
+      background: rgba(245,158,11,0.06);
       color: var(--accent-dim);
       font-weight: 600;
       font-size: 12px;
@@ -185,31 +191,69 @@
     td {
       padding: 10px 14px;
       color: var(--muted);
-      border-bottom: 1px solid rgba(0, 255, 65, 0.07);
+      border-bottom: 1px solid var(--border-soft);
       vertical-align: top;
     }
 
     tr:last-child td { border-bottom: none; }
 
     footer {
-      border-top: 1px solid var(--border);
-      padding: 32px 24px;
-      text-align: center;
+      background: var(--surface);
+      border-top: 1px solid var(--border-soft);
+      padding: 36px 24px;
     }
 
-    footer p { font-size: 13px; color: var(--muted); margin: 0; }
-    footer nav { justify-content: center; margin-top: 12px; }
+    .footer-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .footer-copy { font-size: 13px; color: var(--muted); }
+
+    .footer-links { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .footer-links a {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border-soft);
+      text-decoration: none;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .footer-links a:hover, .footer-links a.active {
+      color: var(--accent);
+      border-color: var(--border);
+      text-decoration: none;
+    }
+
+    @media (max-width: 600px) {
+      .footer-inner { flex-direction: column; align-items: center; text-align: center; }
+      table { font-size: 13px; }
+      th, td { padding: 8px 10px; }
+    }
   </style>
 </head>
 <body>
 
   <header>
     <div class="inner">
-      <a class="logo" href="/">
-        <div class="logo-mark">H</div>
-        <span class="logo-text">Hermes<span>TikTok</span></span>
+      <a class="logo" href="index.html">
+        <svg class="logo-icon" viewBox="0 0 34 34" fill="none">
+          <rect width="34" height="34" rx="8" fill="#F59E0B"/>
+          <path d="M8 10h4v14H8V10zm7 0h2l5 7.5V10h4v14h-2L19 16.5V24h-4V10z" fill="#0a0a0c" opacity="0.9"/>
+        </svg>
+        <span class="logo-name">ContentBoss <span>Studio</span></span>
       </a>
       <nav>
+        <a href="index.html">Home</a>
         <a href="terms.html">Terms of Service</a>
         <a href="privacy.html" class="active">Privacy Policy</a>
       </nav>
@@ -224,18 +268,16 @@
     </div>
 
     <div class="highlight-box">
-      <p>HermesTikTok is designed with privacy in mind. This policy explains what data we collect, how we use it, and the choices you have. We do not sell your personal data.</p>
+      <p>ContentBoss Studio is designed with privacy in mind. This policy explains what data we collect, how we use it, and the choices you have. We do not sell your personal data.</p>
     </div>
 
     <div class="divider"></div>
 
-    <!-- 1 -->
     <section>
       <h2>1. Who We Are</h2>
-      <p>HermesTikTok is an AI-powered TikTok content creation tool. References to "we," "us," or "our" mean the operator of this application. For data-related enquiries, contact us at <a href="mailto:aizat.iqmal656@gmail.com">aizat.iqmal656@gmail.com</a>.</p>
+      <p>ContentBoss Studio is an AI-powered TikTok content management platform. References to "we," "us," or "our" mean the operator of this application. For data-related enquiries, contact us at <a href="mailto:aizat.iqmal656@gmail.com">aizat.iqmal656@gmail.com</a>.</p>
     </section>
 
-    <!-- 2 -->
     <section>
       <h2>2. Information We Collect</h2>
 
@@ -243,11 +285,12 @@
       <ul>
         <li><strong>API Keys:</strong> You enter your own API keys for fal.ai, ElevenLabs, and Anthropic. These are stored locally in your browser's environment configuration and are never transmitted to our servers.</li>
         <li><strong>Content Inputs:</strong> Product names, descriptions, and other text you enter to run the pipeline.</li>
+        <li><strong>TikTok Account:</strong> When using the TikTok Content Posting API, we access only the permissions you explicitly grant during the OAuth flow. We do not store your TikTok credentials on our servers.</li>
       </ul>
 
       <h3>2.2 Automatically Collected Information</h3>
       <ul>
-        <li><strong>Local Storage:</strong> The app stores the last fal.ai request ID in your browser's <code>localStorage</code> to enable video retrieval. This data stays on your device.</li>
+        <li><strong>Local Storage:</strong> The app stores pipeline state and the last fal.ai request ID in your browser's <code>localStorage</code> to enable video retrieval. This data stays on your device.</li>
         <li><strong>Browser State:</strong> In-memory pipeline results (scripts, image URLs, audio blobs, video URLs) exist only during your session and are cleared on page reload.</li>
       </ul>
 
@@ -260,7 +303,6 @@
       </ul>
     </section>
 
-    <!-- 3 -->
     <section>
       <h2>3. How We Use Information</h2>
       <p>The limited information processed by the Service is used solely to:</p>
@@ -268,13 +310,25 @@
         <li>Execute your content pipeline requests (trend research, script generation, image/video/voice creation)</li>
         <li>Display results within the application interface</li>
         <li>Recover a previously submitted video generation job (via the stored request ID)</li>
+        <li>Publish content to TikTok on your behalf when you explicitly initiate a post</li>
       </ul>
       <p>We do not use your content or inputs to train AI models.</p>
     </section>
 
-    <!-- 4 -->
     <section>
-      <h2>4. Third-Party Data Processing</h2>
+      <h2>4. TikTok API Data Usage</h2>
+      <p>ContentBoss Studio integrates with the TikTok Content Posting API to enable direct publishing. In connection with this integration:</p>
+      <ul>
+        <li>We request only the minimum permissions necessary to post content on your behalf</li>
+        <li>TikTok OAuth tokens are stored securely and used solely for posting</li>
+        <li>We do not access your TikTok inbox, followers, or personal profile information beyond what is required to confirm a successful post</li>
+        <li>You can revoke access at any time via TikTok's app permission settings</li>
+      </ul>
+      <p>TikTok's data practices are governed by the <a href="https://www.tiktok.com/legal/privacy-policy" target="_blank" rel="noopener">TikTok Privacy Policy</a>.</p>
+    </section>
+
+    <section>
+      <h2>5. Third-Party Data Processing</h2>
       <p>When you run the pipeline, your inputs are sent to third-party AI providers. Each provider has its own privacy policy:</p>
 
       <table>
@@ -301,16 +355,20 @@
             <td>Text-to-speech voice synthesis</td>
             <td><a href="https://elevenlabs.io/privacy" target="_blank" rel="noopener">elevenlabs.io/privacy</a></td>
           </tr>
+          <tr>
+            <td><strong>TikTok</strong></td>
+            <td>Content publishing via Content Posting API</td>
+            <td><a href="https://www.tiktok.com/legal/privacy-policy" target="_blank" rel="noopener">tiktok.com/legal/privacy-policy</a></td>
+          </tr>
         </tbody>
       </table>
 
       <p>Your inputs (product descriptions, scripts, image URLs) are transmitted to these providers when you trigger the corresponding features. We recommend reviewing each provider's data retention and training policies.</p>
     </section>
 
-    <!-- 5 -->
     <section>
-      <h2>5. Cookies and Local Storage</h2>
-      <p>HermesTikTok does not set tracking cookies. We use browser <code>localStorage</code> only for functional purposes:</p>
+      <h2>6. Cookies and Local Storage</h2>
+      <p>ContentBoss Studio does not set tracking cookies. We use browser <code>localStorage</code> only for functional purposes:</p>
 
       <table>
         <thead>
@@ -326,18 +384,22 @@
             <td>Stores the most recent Kling video request ID to enable recovery after a browser reload</td>
             <td>Until you clear it or click ✕ in the UI</td>
           </tr>
+          <tr>
+            <td><code>cost_month</code></td>
+            <td>Tracks the current billing month for cost estimation display</td>
+            <td>Resets on the 1st of each month</td>
+          </tr>
         </tbody>
       </table>
 
-      <p>You can clear this data at any time by clicking the ✕ button next to "Retrieve Last Video" in the app, or by clearing your browser's local storage.</p>
+      <p>You can clear this data at any time via your browser's developer tools or by clearing site data in your browser settings.</p>
     </section>
 
-    <!-- 6 -->
     <section>
-      <h2>6. Data Security</h2>
-      <p>Because HermesTikTok processes API calls directly from your browser to third-party providers:</p>
+      <h2>7. Data Security</h2>
+      <p>Because ContentBoss Studio processes API calls directly from your browser to third-party providers:</p>
       <ul>
-        <li>Your API keys are stored only in your local environment configuration (the <code>.env</code> file on your machine) — they are never stored on our servers</li>
+        <li>Your API keys are stored only in your local environment configuration — they are never stored on our servers</li>
         <li>All API calls use HTTPS/TLS encryption in transit</li>
         <li>Generated media (images, audio, video) is held in browser memory and released when you close the tab</li>
         <li>No generated content is stored or logged on our infrastructure</li>
@@ -345,26 +407,23 @@
       <p>Despite these measures, no method of data transmission is 100% secure. Use the Service at your own risk.</p>
     </section>
 
-    <!-- 7 -->
     <section>
-      <h2>7. Data Retention</h2>
+      <h2>8. Data Retention</h2>
       <p>We retain no personal data on our servers because we collect none. Data processing happens:</p>
       <ul>
         <li><strong>In your browser (in-memory):</strong> pipeline results, generated images, audio blobs, video URLs — cleared on page close</li>
-        <li><strong>In your browser (localStorage):</strong> the last fal.ai request ID — persists until you delete it</li>
+        <li><strong>In your browser (localStorage):</strong> the last fal.ai request ID and cost tracking — persists until you delete it</li>
         <li><strong>At third-party providers:</strong> governed by each provider's retention policy</li>
       </ul>
     </section>
 
-    <!-- 8 -->
     <section>
-      <h2>8. Children's Privacy</h2>
-      <p>HermesTikTok is not directed at individuals under 18 years of age. We do not knowingly collect personal information from children. If you believe a child has provided information through the Service, please contact us and we will take appropriate action.</p>
+      <h2>9. Children's Privacy</h2>
+      <p>ContentBoss Studio is not directed at individuals under 18 years of age. We do not knowingly collect personal information from children. If you believe a child has provided information through the Service, please contact us and we will take appropriate action.</p>
     </section>
 
-    <!-- 9 -->
     <section>
-      <h2>9. Your Rights</h2>
+      <h2>10. Your Rights</h2>
       <p>Depending on your location, you may have the right to:</p>
       <ul>
         <li>Access, correct, or delete personal data we hold about you</li>
@@ -372,18 +431,16 @@
         <li>Data portability</li>
         <li>Lodge a complaint with a supervisory authority</li>
       </ul>
-      <p>Since we collect no personal data on our servers, most of these rights are satisfied automatically. For data held by third-party providers, please exercise your rights directly with those providers using the links in Section 4.</p>
+      <p>Since we collect no personal data on our servers, most of these rights are satisfied automatically. For data held by third-party providers, please exercise your rights directly with those providers using the links in Section 5.</p>
     </section>
 
-    <!-- 10 -->
     <section>
-      <h2>10. Changes to This Policy</h2>
+      <h2>11. Changes to This Policy</h2>
       <p>We may update this Privacy Policy from time to time. We will notify you of material changes by updating the "Last updated" date at the top of this page. Your continued use of the Service after changes constitutes acceptance of the updated policy.</p>
     </section>
 
-    <!-- 11 -->
     <section>
-      <h2>11. Contact Us</h2>
+      <h2>12. Contact Us</h2>
       <p>If you have questions, concerns, or requests relating to this Privacy Policy, please contact us:</p>
       <div class="highlight-box">
         <p>📧 <a href="mailto:aizat.iqmal656@gmail.com">aizat.iqmal656@gmail.com</a></p>
@@ -394,11 +451,17 @@
   </main>
 
   <footer>
-    <p>&copy; 2026 HermesTikTok. All rights reserved.</p>
-    <nav>
-      <a href="terms.html">Terms of Service</a>
-      <a href="privacy.html">Privacy Policy</a>
-    </nav>
+    <div class="footer-inner">
+      <span class="footer-copy">&copy; 2026 ContentBoss Studio. All rights reserved.</span>
+      <div class="footer-links">
+        <a href="index.html">Home</a>
+        <a href="terms.html">Terms of Service</a>
+        <a href="privacy.html" class="active">Privacy Policy</a>
+      </div>
+      <span class="footer-copy">
+        <a href="mailto:aizat.iqmal656@gmail.com" style="color:var(--accent);">aizat.iqmal656@gmail.com</a>
+      </span>
+    </div>
   </footer>
 
 </body>
