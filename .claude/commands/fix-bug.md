@@ -100,7 +100,40 @@ npx tsc --noEmit 2>&1 | grep "src/screens/tiktok\|src/routes/api/generate-storyb
 
 Only check for errors in TikTok pipeline files. Pre-existing errors in other files (e2e tests, playground, etc.) can be ignored.
 
-### 7. Common Fixes Applied
+### 7. Check for Uncommitted Auto-Generated Files
+
+**Always run `git status` before committing** to catch files that Vite regenerates automatically.
+
+The most common culprit is `src/routeTree.gen.ts` — Vite regenerates it whenever a new route file is added or removed. If it is not committed alongside the route file, the app will 404 or fail to register the new route.
+
+```bash
+git status
+```
+
+Look for any of these in the output before committing:
+
+| File | Trigger | Action |
+|------|---------|--------|
+| `src/routeTree.gen.ts` | New/removed file in `src/routes/` | Stage and commit it with the route file |
+| `src/routeTree.gen.ts` | Route param rename (e.g. `$id` → `$missionId`) | Same — must be committed |
+
+**Fix E: Route not found after adding a new API route**
+
+If a new route file was committed but `routeTree.gen.ts` was not, the route will not be registered. Fix:
+
+```bash
+# Start dev server briefly to trigger regeneration, then stop it
+pnpm dev  # wait for "ready" line, then Ctrl+C
+
+# Stage the regenerated file and commit
+git add src/routeTree.gen.ts
+git commit -m "chore: regenerate routeTree — register <route-name> route"
+git push origin main
+```
+
+To avoid this, always check `git status` after any `src/routes/` change and before running `git commit`.
+
+### 8. Common Fixes Applied
 
 After diagnosis, apply the appropriate fix:
 
@@ -127,7 +160,7 @@ Use per-scene Retry button in the Videos grid. The old request ID is saved in `s
 **Fix D: Storyboard returns non-JSON**
 In `generate-storyboard.ts`, the JSON stripping regex handles markdown code blocks. If Claude returns extra text, increase `max_tokens` or tighten the system prompt to say "Return ONLY a JSON array, nothing else."
 
-### 8. Report Fix
+### 9. Report Fix
 
 Output:
 - Error identified: [description]
