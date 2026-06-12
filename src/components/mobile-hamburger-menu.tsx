@@ -45,7 +45,7 @@ export const MOBILE_HAMBURGER_NAV_ITEMS = [
   },
   {
     id: 'playground',
-    label: 'HermesWorld',
+    label: 'ContentBoss Studio',
     icon: Castle02Icon,
     to: '/playground',
     match: (p: string) => p.startsWith('/playground'),

@@ -920,7 +920,7 @@ export function DashboardScreen() {
                 lineHeight: 1.1,
               }}
             >
-              Hermes Workspace
+              ContentBoss Studio
             </h1>
           </div>
         </div>

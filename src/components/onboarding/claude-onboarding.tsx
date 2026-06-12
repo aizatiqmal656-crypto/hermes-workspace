@@ -528,7 +528,7 @@ export function ClaudeOnboarding() {
                   filter: 'drop-shadow(0 8px 24px rgba(99,102,241,0.3))',
                 }}
               />
-              <h2 className="text-xl font-bold">Welcome to Hermes Workspace</h2>
+              <h2 className="text-xl font-bold">Welcome to ContentBoss Studio</h2>
               <p className="text-sm" style={mutedStyle}>
                 Works with any OpenAI-compatible backend. Hermes Agent gateway APIs
                 unlock sessions, memory, skills, and other extras automatically.

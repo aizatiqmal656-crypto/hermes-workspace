@@ -967,7 +967,7 @@ function ChatSidebarComponent({
                   className="text-sm font-semibold tracking-tight"
                   style={{ color: 'var(--theme-text)' }}
                 >
-                  Hermes Workspace
+                  ContentBoss Studio
                 </span>
               </Link>
             </motion.div>
@@ -1077,7 +1077,7 @@ function ChatSidebarComponent({
               className="size-5 shrink-0"
               style={{ color: '#facc15' }}
             />
-            <span>HermesWorld</span>
+            <span>ContentBoss Studio</span>
             <span
               className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold leading-none"
               style={{

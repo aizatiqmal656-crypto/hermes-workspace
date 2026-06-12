@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-const BASE_TITLE = 'Hermes Workspace'
+const BASE_TITLE = 'ContentBoss Studio'
 
 /**
  * Sets document.title for the current page.
