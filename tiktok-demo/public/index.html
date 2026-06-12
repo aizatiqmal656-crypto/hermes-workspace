@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ContentBoss Studio — TikTok Integration Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0a0a0c;
+      --surface:     #111116;
+      --surface-2:   #16161c;
+      --border:      rgba(245,158,11,0.18);
+      --border-soft: rgba(255,255,255,0.06);
+      --accent:      #F59E0B;
+      --accent-dim:  #FCD34D;
+      --accent-soft: rgba(245,158,11,0.08);
+      --text:        #f4f4f6;
+      --muted:       rgba(244,244,246,0.55);
+      --green:       #34d399;
+      --green-soft:  rgba(52,211,153,0.1);
+      --red:         #f87171;
+      --red-soft:    rgba(248,113,113,0.08);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--accent-dim); text-decoration: none; }
+    a:hover { color: var(--accent); }
+
+    header {
+      border-bottom: 1px solid var(--border-soft);
+      background: var(--surface);
+      padding: 18px 0;
+    }
+
+    header .inner {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 30px; height: 30px; flex-shrink: 0; }
+    .logo-name { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+    .logo-name span { color: var(--accent); }
+
+    .header-badge {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--border);
+      background: var(--accent-soft);
+      border-radius: 4px;
+      padding: 3px 10px;
+    }
+
+    main { max-width: 760px; margin: 44px auto 96px; padding: 0 24px; }
+
+    .page-title { margin-bottom: 8px; font-size: clamp(22px, 4vw, 30px); font-weight: 800; letter-spacing: -0.5px; }
+    .page-sub { color: var(--muted); font-size: 14px; margin-bottom: 36px; }
+    .page-sub code {
+      font-family: "SF Mono", ui-monospace, monospace;
+      font-size: 12px;
+      background: var(--accent-soft);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: var(--accent-dim);
+    }
+
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+
+    .step-card.active { border-color: var(--border); }
+    .step-card.done { border-color: rgba(52,211,153,0.3); }
+
+    .step-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      background: var(--accent-soft);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .step-card.done .step-num { background: var(--green-soft); border-color: rgba(52,211,153,0.4); color: var(--green); }
+
+    .step-title { font-size: 16px; font-weight: 700; }
+
+    .scope-chip {
+      font-family: "SF Mono", ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--accent-dim);
+      background: var(--accent-soft);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 2px 10px;
+      margin-left: auto;
+    }
+
+    .step-body { color: var(--muted); font-size: 14px; }
+    .step-body p { margin-bottom: 14px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 11px 22px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: filter 0.15s, opacity 0.15s;
+      font-family: inherit;
+    }
+
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn:not(:disabled):hover { filter: brightness(1.1); }
+
+    .btn-primary { background: var(--accent); color: #0a0a0c; }
+    .btn-tiktok { background: #fe2c55; color: #fff; }
+
+    .status-line {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      font-size: 13px;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    .status-line.show { display: flex; }
+    .status-line.info { background: var(--accent-soft); border: 1px solid var(--border); color: var(--accent-dim); }
+    .status-line.ok { background: var(--green-soft); border: 1px solid rgba(52,211,153,0.3); color: var(--green); }
+    .status-line.err { background: var(--red-soft); border: 1px solid rgba(248,113,113,0.3); color: var(--red); }
+
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(245,158,11,0.25);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .user-chip {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin-top: 14px;
+      background: var(--surface-2);
+      border: 1px solid rgba(52,211,153,0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+
+    .user-chip.show { display: flex; }
+    .user-chip img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--green); }
+    .user-chip .name { font-weight: 700; font-size: 14px; color: var(--text); }
+    .user-chip .tag { font-size: 12px; color: var(--green); }
+
+    .video-box { margin-top: 14px; }
+
+    .video-box video {
+      width: 100%;
+      max-width: 250px;
+      aspect-ratio: 9 / 16;
+      border-radius: 10px;
+      border: 1px solid var(--border-soft);
+      background: #000;
+      display: block;
+    }
+
+    label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin: 14px 0 6px; letter-spacing: 0.3px; }
+
+    input[type="url"], input[type="text"] {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus { border-color: var(--border); }
+
+    .progress-steps { display: none; gap: 0; margin-top: 16px; flex-direction: column; }
+    .progress-steps.show { display: flex; }
+
+    .p-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      padding: 6px 0;
+    }
+
+    .p-step .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--border-soft);
+      flex-shrink: 0;
+    }
+
+    .p-step.active { color: var(--accent-dim); }
+    .p-step.active .dot { background: var(--accent); box-shadow: 0 0 8px rgba(245,158,11,0.6); }
+    .p-step.done { color: var(--green); }
+    .p-step.done .dot { background: var(--green); }
+
+    footer {
+      border-top: 1px solid var(--border-soft);
+      background: var(--surface);
+      padding: 28px 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    footer a { margin: 0 8px; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="inner">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 34 34" fill="none">
+          <rect width="34" height="34" rx="8" fill="#F59E0B"/>
+          <path d="M8 10h4v14H8V10zm7 0h2l5 7.5V10h4v14h-2L19 16.5V24h-4V10z" fill="#0a0a0c" opacity="0.9"/>
+        </svg>
+        <span class="logo-name">ContentBoss <span>Studio</span></span>
+      </div>
+      <span class="header-badge">TikTok API Demo · Sandbox</span>
+    </div>
+  </header>
+
+  <main>
+    <h1 class="page-title">ContentBoss Studio — TikTok Integration Demo</h1>
+    <p class="page-sub">
+      This page demonstrates the full TikTok integration used by ContentBoss Studio:
+      OAuth login via Login Kit, user info retrieval, and direct video publishing via the
+      Content Posting API. Scopes demonstrated:
+      <code>user.info.basic</code> <code>video.upload</code> <code>video.publish</code>
+    </p>
+
+    <!-- ── Step 1: OAuth Login ── -->
+    <section class="step-card active" id="step1">
+      <div class="step-head">
+        <span class="step-num" id="step1-num">1</span>
+        <span class="step-title">Login with TikTok</span>
+        <span class="scope-chip">user.info.basic</span>
+      </div>
+      <div class="step-body">
+        <p>Authenticate via TikTok Login Kit (OAuth 2.0 with CSRF state protection). After authorization, the code is exchanged for an access token server-side — the client secret never reaches the browser.</p>
+        <button class="btn btn-tiktok" id="login-btn">🎵 Login with TikTok</button>
+        <div class="status-line" id="step1-status"></div>
+        <div class="user-chip" id="user-chip">
+          <img id="user-avatar" src="" alt="TikTok avatar" />
+          <div>
+            <div class="name" id="user-name">—</div>
+            <div class="tag">✓ Connected via TikTok Login Kit</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Step 2: Video Preview ── -->
+    <section class="step-card" id="step2">
+      <div class="step-head">
+        <span class="step-num" id="step2-num">2</span>
+        <span class="step-title">Select Video</span>
+        <span class="scope-chip">video.upload</span>
+      </div>
+      <div class="step-body">
+        <p>The video below was produced by the ContentBoss Studio AI pipeline. You can also paste a publicly accessible MP4 URL (TikTok pulls it via <code style="font-family:'SF Mono',ui-monospace,monospace;font-size:12px">PULL_FROM_URL</code>).</p>
+        <div class="video-box">
+          <video id="preview-video" src="sample-video.mp4" controls muted playsinline></video>
+        </div>
+        <label for="video-url">Video URL (publicly accessible MP4, 9:16)</label>
+        <input type="url" id="video-url" placeholder="https://example.com/your-video.mp4" />
+        <label for="video-caption">Caption</label>
+        <input type="text" id="video-caption" maxlength="150" value="Generated with ContentBoss Studio ✨ #AI #ContentCreation" />
+      </div>
+    </section>
+
+    <!-- ── Step 3: Post to TikTok ── -->
+    <section class="step-card" id="step3">
+      <div class="step-head">
+        <span class="step-num" id="step3-num">3</span>
+        <span class="step-title">Post to TikTok</span>
+        <span class="scope-chip">video.publish</span>
+      </div>
+      <div class="step-body">
+        <p>Publishes the video directly to the connected TikTok account using the Content Posting API direct post endpoint (sandbox mode — visible only to the test account).</p>
+        <button class="btn btn-primary" id="post-btn" disabled>📤 Post to TikTok (Sandbox)</button>
+        <div class="progress-steps" id="post-progress">
+          <div class="p-step" id="p-init"><span class="dot"></span> Initialising upload (video/init)</div>
+          <div class="p-step" id="p-upload"><span class="dot"></span> Uploading — TikTok pulling video from URL</div>
+          <div class="p-step" id="p-process"><span class="dot"></span> Processing on TikTok servers</div>
+          <div class="p-step" id="p-done"><span class="dot"></span> Posted to TikTok ✅</div>
+        </div>
+        <div class="status-line" id="step3-status"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    © 2026 ContentBoss Studio ·
+    <a href="https://aizatiqmal656-crypto.github.io/hermes-workspace/" target="_blank" rel="noopener">Home</a> ·
+    <a href="https://aizatiqmal656-crypto.github.io/hermes-workspace/terms.html" target="_blank" rel="noopener">Terms</a> ·
+    <a href="https://aizatiqmal656-crypto.github.io/hermes-workspace/privacy.html" target="_blank" rel="noopener">Privacy</a>
+  </footer>
+
+  <script>
+    const REDIRECT_URI = window.location.origin + '/'
+    const SCOPES = 'user.info.basic,video.upload,video.publish'
+
+    let accessToken = null
+
+    const $ = (id) => document.getElementById(id)
+
+    function setStatus(el, kind, html, spinning = false) {
+      el.className = 'status-line show ' + kind
+      el.innerHTML = (spinning ? '<span class="spinner"></span>' : '') + '<span>' + html + '</span>'
+    }
+
+    function clearStatus(el) {
+      el.className = 'status-line'
+      el.innerHTML = ''
+    }
+
+    function markStepDone(n) {
+      const card = $('step' + n)
+      card.classList.remove('active')
+      card.classList.add('done')
+      $('step' + n + '-num').textContent = '✓'
+      const next = $('step' + (n + 1))
+      if (next) next.classList.add('active')
+    }
+
+    // ── Step 1: OAuth login ──
+
+    $('login-btn').addEventListener('click', async () => {
+      const statusEl = $('step1-status')
+      try {
+        setStatus(statusEl, 'info', 'Fetching app configuration…', true)
+        const res = await fetch('/api/token')
+        const cfg = await res.json()
+        if (!res.ok || !cfg.client_key) throw new Error(cfg.error || 'CLIENT_KEY not configured on server')
+
+        const state = crypto.randomUUID()
+        sessionStorage.setItem('tiktok_oauth_state', state)
+
+        const url = new URL('https://www.tiktok.com/v2/auth/authorize/')
+        url.searchParams.set('client_key', cfg.client_key)
+        url.searchParams.set('scope', SCOPES)
+        url.searchParams.set('response_type', 'code')
+        url.searchParams.set('redirect_uri', REDIRECT_URI)
+        url.searchParams.set('state', state)
+
+        setStatus(statusEl, 'info', 'Redirecting to TikTok…', true)
+        window.location.href = url.toString()
+      } catch (err) {
+        setStatus(statusEl, 'err', '⚠ ' + (err instanceof Error ? err.message : 'Login failed'))
+      }
+    })
+
+    // ── OAuth callback handling ──
+
+    async function handleOAuthCallback() {
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
+      const returnedState = params.get('state')
+      const oauthError = params.get('error')
+      if (!code && !oauthError) return
+
+      // Clean the URL so a refresh doesn't re-trigger the exchange
+      window.history.replaceState({}, '', window.location.pathname)
+
+      const statusEl = $('step1-status')
+
+      if (oauthError) {
+        setStatus(statusEl, 'err', '⚠ TikTok authorization denied: ' + oauthError)
+        return
+      }
+
+      const savedState = sessionStorage.getItem('tiktok_oauth_state')
+      sessionStorage.removeItem('tiktok_oauth_state')
+      if (!savedState || savedState !== returnedState) {
+        setStatus(statusEl, 'err', '⚠ State mismatch — possible CSRF. Please try logging in again.')
+        return
+      }
+
+      try {
+        setStatus(statusEl, 'info', 'Exchanging authorization code for access token…', true)
+        const tokenRes = await fetch('/api/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, redirect_uri: REDIRECT_URI }),
+        })
+        const tokenData = await tokenRes.json()
+        if (!tokenRes.ok || !tokenData.access_token) {
+          throw new Error(tokenData.error || 'Token exchange failed')
+        }
+        accessToken = tokenData.access_token
+
+        setStatus(statusEl, 'info', 'Fetching user info…', true)
+        const userRes = await fetch('/api/user-info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access_token: accessToken }),
+        })
+        const userData = await userRes.json()
+        if (!userRes.ok || !userData.display_name) {
+          throw new Error(userData.error || 'Failed to fetch user info')
+        }
+
+        $('user-name').textContent = '@' + userData.display_name
+        if (userData.avatar_url) $('user-avatar').src = userData.avatar_url
+        $('user-chip').classList.add('show')
+        clearStatus(statusEl)
+        setStatus(statusEl, 'ok', '✓ Connected as @' + userData.display_name + ' — user.info.basic scope verified')
+
+        markStepDone(1)
+        markStepDone(2)
+        $('post-btn').disabled = false
+      } catch (err) {
+        setStatus(statusEl, 'err', '⚠ ' + (err instanceof Error ? err.message : 'Authentication failed'))
+      }
+    }
+
+    // ── Step 3: Post video ──
+
+    function setProgress(stage) {
+      const order = ['p-init', 'p-upload', 'p-process', 'p-done']
+      const idx = order.indexOf(stage)
+      order.forEach((id, i) => {
+        const el = $(id)
+        el.classList.remove('active', 'done')
+        if (i < idx) el.classList.add('done')
+        else if (i === idx) el.classList.add('active')
+      })
+      if (stage === 'p-done') $('p-done').classList.add('done')
+    }
+
+    $('post-btn').addEventListener('click', async () => {
+      const statusEl = $('step3-status')
+      const btn = $('post-btn')
+      const videoUrl = $('video-url').value.trim() || window.location.origin + '/sample-video.mp4'
+      const caption = $('video-caption').value.trim() || 'Posted via ContentBoss Studio'
+
+      if (!accessToken) {
+        setStatus(statusEl, 'err', '⚠ Not connected — complete Step 1 first')
+        return
+      }
+
+      btn.disabled = true
+      $('post-progress').classList.add('show')
+      clearStatus(statusEl)
+
+      try {
+        // 1. Init direct post
+        setProgress('p-init')
+        const initRes = await fetch('/api/post-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'init', access_token: accessToken, video_url: videoUrl, caption }),
+        })
+        const initData = await initRes.json()
+        if (!initRes.ok || !initData.publish_id) {
+          throw new Error(initData.error || 'Video init failed')
+        }
+        const publishId = initData.publish_id
+
+        // 2. Poll status — uploading → processing → posted (max 2 min)
+        setProgress('p-upload')
+        for (let i = 0; i < 24; i++) {
+          await new Promise((r) => setTimeout(r, 5000))
+          const stRes = await fetch('/api/post-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'status', access_token: accessToken, publish_id: publishId }),
+          })
+          const stData = await stRes.json()
+          if (!stRes.ok) throw new Error(stData.error || 'Status check failed')
+
+          const s = stData.status
+          if (s === 'PROCESSING_DOWNLOAD' || s === 'PROCESSING_UPLOAD') setProgress('p-upload')
+          else if (s === 'PROCESSING' || s === 'SEND_TO_USER_INBOX') setProgress('p-process')
+          else if (s === 'PUBLISH_COMPLETE') {
+            setProgress('p-done')
+            setStatus(statusEl, 'ok', '✅ Posted to TikTok! Video is live on the connected sandbox account. (publish_id: ' + publishId + ')')
+            markStepDone(3)
+            return
+          } else if (s === 'FAILED') {
+            throw new Error('TikTok publish failed: ' + (stData.fail_reason || 'unknown reason'))
+          }
+        }
+        throw new Error('Timed out waiting for TikTok to finish processing (2 min)')
+      } catch (err) {
+        setStatus(statusEl, 'err', '⚠ ' + (err instanceof Error ? err.message : 'Post failed'))
+        btn.disabled = false
+      }
+    })
+
+    handleOAuthCallback()
+  </script>
+
+</body>
+</html>
