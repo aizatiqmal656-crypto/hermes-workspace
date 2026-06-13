@@ -312,7 +312,7 @@
           <video id="preview-video" src="sample-video.mp4" controls muted playsinline></video>
         </div>
         <label for="video-url">Video URL (publicly accessible MP4, 9:16)</label>
-        <input type="url" id="video-url" placeholder="https://example.com/your-video.mp4" />
+        <input type="url" id="video-url" placeholder="https://aizatiqmal656-crypto.github.io/hermes-workspace/sample-video.mp4" />
         <label for="video-caption">Caption</label>
         <input type="text" id="video-caption" maxlength="150" value="Generated with ContentBoss Studio ✨ #AI #ContentCreation" />
       </div>
@@ -481,7 +481,7 @@
     $('post-btn').addEventListener('click', async () => {
       const statusEl = $('step3-status')
       const btn = $('post-btn')
-      const videoUrl = $('video-url').value.trim() || window.location.origin + '/sample-video.mp4'
+      const videoUrl = $('video-url').value.trim() || 'https://aizatiqmal656-crypto.github.io/hermes-workspace/sample-video.mp4'
       const caption = $('video-caption').value.trim() || 'Posted via ContentBoss Studio'
 
       if (!accessToken) {
