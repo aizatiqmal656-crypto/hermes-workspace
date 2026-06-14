@@ -1482,12 +1482,21 @@ export function TikTokScreen() {
             </AnimatePresence>
           </Card>
 
-          {/* Storyboard */}
+          {/* ── Storyboard + Scene Images (merged) ── */}
           <AnimatePresence>
             {(storyboard || storyboardGenerating) && (
               <motion.div key="storyboard" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                 <Card>
-                  <SecHead label="Storyboard — 6 Scenes" right="9:16 · cinematic" />
+                  <SecHead
+                    label="Storyboard — 6 Scenes"
+                    right={
+                      allImagesReady
+                        ? `Images ${imagesReady}/6 · Videos ${videosReady}/6`
+                        : imagesReady > 0
+                          ? `Images ${imagesReady}/6`
+                          : '9:16 · cinematic'
+                    }
+                  />
 
                   {storyboardError && (
                     <div style={{ padding: '8px 12px', borderRadius: 8, fontSize: 12.5, color: T.accentInk, background: T.accentSoft, border: `1px solid ${T.accentLine}` }}>
@@ -1498,34 +1507,83 @@ export function TikTokScreen() {
                   {storyboardGenerating && !storyboard ? (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                       {Array.from({ length: 6 }).map((_, i) => (
-                        <motion.div key={i} style={{ borderRadius: 10, background: T.border, aspectRatio: '9/16', minHeight: 120 }} animate={{ opacity: [0.3, 0.7, 0.3] }} transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }} />
+                        <motion.div key={i} style={{ borderRadius: 10, background: T.border, aspectRatio: '3/4', minHeight: 120 }} animate={{ opacity: [0.3, 0.7, 0.3] }} transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.1 }} />
                       ))}
                     </div>
                   ) : storyboard ? (
                     <>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                        {storyboard.map((scene) => (
-                          <motion.div
-                            key={scene.sceneNumber}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: (scene.sceneNumber - 1) * 0.06 }}
-                            style={{ borderRadius: 10, border: `1px solid ${T.border}`, overflow: 'hidden', background: T.card }}
-                          >
-                            <div style={{ aspectRatio: '9/16', background: `repeating-linear-gradient(45deg,#F4F4F2,#F4F4F2 7px,#EDEDEA 7px,#EDEDEA 14px)`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexDirection: 'column', gap: 6 }}>
-                              <span style={{ position: 'absolute', top: 7, left: 7, background: T.card, border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 10, fontWeight: 700, padding: '2px 6px', color: T.ink }}>{scene.sceneNumber}</span>
-                              <span style={{ fontSize: 10, fontFamily: 'ui-monospace, monospace', color: T.ink3 }}>{scene.angle}</span>
-                            </div>
-                            <div style={{ padding: '8px 10px', borderTop: `1px solid ${T.border}` }}>
-                              <div style={{ fontSize: 11.5, color: T.ink2, lineHeight: 1.4 }}>{scene.action}</div>
-                              <div style={{ marginTop: 6, padding: '5px 8px', borderRadius: 6, background: T.accentSoft, fontSize: 10.5, color: T.accentInk, lineHeight: 1.4 }}>
-                                <span style={{ fontWeight: 700 }}>VO: </span>{scene.voiceover_text}
+                        {storyboard.map((scene, idx) => {
+                          const imgState = sceneImages[idx]
+                          const vidState = sceneVideos[idx]
+                          if (!imgState || !vidState) return null
+                          return (
+                            <motion.div
+                              key={scene.sceneNumber}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: (scene.sceneNumber - 1) * 0.06 }}
+                              style={{ borderRadius: 10, border: `1px solid ${T.border}`, overflow: 'hidden', background: T.card, display: 'flex', flexDirection: 'column' }}
+                            >
+                              {/* Header: scene # + angle */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderBottom: `1px solid ${T.border}` }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, padding: '1.5px 7px', borderRadius: 999, flexShrink: 0, background: vidState.url ? T.successSoft : imgState.url ? T.accentSoft : T.border, color: vidState.url ? T.successInk : imgState.url ? T.accentInk : T.ink3, border: `1px solid ${vidState.url ? T.successLine : imgState.url ? T.accentLine : T.border}` }}>S{scene.sceneNumber}</span>
+                                <span style={{ fontSize: 10, color: T.ink3, fontFamily: 'ui-monospace, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{scene.angle}</span>
                               </div>
-                            </div>
-                          </motion.div>
-                        ))}
+
+                              {/* Image / Video slot */}
+                              <div style={{ position: 'relative', aspectRatio: '3/4', background: imgState.url || vidState.url ? '#000' : `repeating-linear-gradient(45deg,#F4F4F2,#F4F4F2 7px,#EDEDEA 7px,#EDEDEA 14px)`, flexShrink: 0, overflow: 'hidden' }}>
+                                {vidState.url && (
+                                  <video src={vidState.url} controls autoPlay loop playsInline muted style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                                )}
+                                {!vidState.url && imgState.url && (
+                                  <img src={imgState.url} alt={`Scene ${scene.sceneNumber}`} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                                )}
+                                {vidState.generating && !vidState.url && (
+                                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 10, background: 'rgba(0,0,0,0.55)' }}>
+                                    <motion.div style={{ width: 8, height: 8, borderRadius: '50%', background: '#E11D48' }} animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 0.9, repeat: Infinity }} />
+                                    {vidState.progress && <span style={{ fontSize: 9, textAlign: 'center', color: '#fff', lineHeight: 1.4 }}>{vidState.progress}</span>}
+                                  </div>
+                                )}
+                                {imgState.generating && !imgState.url && (
+                                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <motion.span style={{ fontSize: 24 }} animate={{ opacity: [0.3, 0.9, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}>🎨</motion.span>
+                                  </div>
+                                )}
+                                {imgState.error && !imgState.url && !imgState.generating && (
+                                  <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 8 }}>
+                                    <span style={{ fontSize: 9.5, textAlign: 'center', color: T.dangerInk }}>{imgState.error}</span>
+                                    <button onClick={() => void generateSingleSceneImage(idx, scene.image_prompt)} style={{ fontSize: 10, padding: '3px 10px', borderRadius: 6, background: T.dangerSoft, border: `1px solid ${T.dangerLine}`, color: T.dangerInk, cursor: 'pointer' }}>Retry</button>
+                                  </div>
+                                )}
+                                {vidState.error && !vidState.url && !vidState.generating && imgState.url && (
+                                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '5px 7px', background: 'rgba(239,68,68,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                                    <span style={{ fontSize: 9, color: '#fff', textAlign: 'center', lineHeight: 1.3 }}>{vidState.error.slice(0, 55)}</span>
+                                    <button onClick={() => { const u = imgState.url; if (u) void generateSingleSceneVideo(idx, u, scene.action) }} style={{ fontSize: 9, padding: '2px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: '#fff', cursor: 'pointer' }}>Retry</button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* VO text + per-scene redo */}
+                              <div style={{ padding: '6px 8px 8px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                <div style={{ fontSize: 10.5, color: T.accentInk, lineHeight: 1.4, background: T.accentSoft, borderRadius: 5, padding: '4px 6px' }}>
+                                  <span style={{ fontWeight: 700, marginRight: 3 }}>VO:</span>{scene.voiceover_text}
+                                </div>
+                                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                  {imgState.url && (
+                                    <button onClick={() => void generateSingleSceneImage(idx, scene.image_prompt)} style={{ fontSize: 9.5, padding: '2px 8px', borderRadius: 5, border: `1px solid ${T.border}`, background: T.card, color: T.ink3, cursor: 'pointer' }}>Redo img</button>
+                                  )}
+                                  {vidState.url && imgState.url && (
+                                    <button onClick={() => { const u = imgState.url; if (u) void generateSingleSceneVideo(idx, u, scene.action) }} style={{ fontSize: 9.5, padding: '2px 8px', borderRadius: 5, border: `1px solid ${T.border}`, background: T.card, color: T.ink3, cursor: 'pointer' }}>Redo video</button>
+                                  )}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )
+                        })}
                       </div>
 
+                      {/* Toolbar */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', paddingTop: 4 }}>
                         <button
                           onClick={storyboardGenerating ? undefined : generateStoryboard}
@@ -1534,73 +1592,39 @@ export function TikTokScreen() {
                         >
                           Regenerate Storyboard
                         </button>
-                        {!sceneImages.some((s) => s.url || s.generating) && (
+                        <button
+                          onClick={sceneImages.some((s) => s.generating) ? undefined : () => void generateAllSceneImages()}
+                          disabled={sceneImages.some((s) => s.generating)}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 16px', borderRadius: 8, border: 'none', background: sceneImages.some((s) => s.generating) ? T.border : '#9333EA', color: sceneImages.some((s) => s.generating) ? T.ink2 : '#fff', fontSize: 12.5, fontWeight: 600, cursor: sceneImages.some((s) => s.generating) ? 'default' : 'pointer', opacity: sceneImages.some((s) => s.generating) ? 0.65 : 1 }}
+                        >
+                          {sceneImages.some((s) => s.generating)
+                            ? <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>⟳</motion.span> Generating images…</>
+                            : <>🎨 {allImagesReady ? 'Regenerate All Images' : 'Generate All Images →'}</>}
+                        </button>
+                        {allImagesReady && !sceneVideos.some((v) => v.generating) && (
                           <button
-                            onClick={generateAllSceneImages}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 16px', borderRadius: 8, border: 'none', background: '#9333EA', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+                            onClick={() => {
+                              console.log('[Pipeline] Generate All Videos clicked', {
+                                storyboardLen: storyboard?.length,
+                                imagesReady: sceneImages.filter((s) => s.url).length,
+                                sceneUrls: sceneImages.map((s, i) => `S${i + 1}:${s.url ? 'ok' : 'missing'}`),
+                              })
+                              void generateAllSceneVideos()
+                            }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 16px', borderRadius: 8, border: 'none', background: '#E11D48', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
                           >
-                            🎨 Generate All Images →
+                            🎬 {videosReady > 0 ? 'Regenerate All Videos' : 'Generate All Videos →'}
                           </button>
+                        )}
+                        {sceneVideos.some((v) => v.generating) && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#E11D48', fontWeight: 600 }}>
+                            <motion.span style={{ width: 7, height: 7, borderRadius: '50%', background: '#E11D48', display: 'inline-block' }} animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 0.9, repeat: Infinity }} />
+                            Generating videos… ({videosReady}/6 done)
+                          </span>
                         )}
                       </div>
                     </>
                   ) : null}
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Scene Images */}
-          <AnimatePresence>
-            {sceneImages.some((s) => s.url || s.generating || s.error) && (
-              <motion.div key="scene-images" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                <Card>
-                  <SecHead label={`Scene Images (${imagesReady}/6)`} right={allImagesReady ? 'All ready' : sceneImages.some(s=>s.generating) ? 'Generating…' : undefined} />
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                    {sceneImages.map((imgState, idx) => {
-                      const scene = storyboard?.[idx]
-                      return (
-                        <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: '1.5px 7px', borderRadius: 999, background: imgState.url ? T.successSoft : T.accentSoft, color: imgState.url ? T.successInk : T.accentInk, border: `1px solid ${imgState.url ? T.successLine : T.accentLine}` }}>S{idx + 1}</span>
-                            {scene && <span style={{ fontSize: 10.5, color: T.ink3 }}>{scene.angle}</span>}
-                          </div>
-                          <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', aspectRatio: '3/4', background: T.border, border: `1px solid ${T.border}` }}>
-                            {imgState.generating && !imgState.url && (
-                              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <motion.span style={{ fontSize: 24 }} animate={{ opacity: [0.3, 0.9, 0.3] }} transition={{ duration: 1.5, repeat: Infinity }}>🎨</motion.span>
-                              </div>
-                            )}
-                            {imgState.url && <img src={imgState.url} alt={`Scene ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                            {imgState.error && !imgState.url && (
-                              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 8 }}>
-                                <span style={{ fontSize: 10, textAlign: 'center', color: T.dangerInk }}>{imgState.error}</span>
-                                <button onClick={() => scene && generateSingleSceneImage(idx, scene.image_prompt)} style={{ fontSize: 10, padding: '3px 10px', borderRadius: 6, background: T.dangerSoft, border: `1px solid ${T.dangerLine}`, color: T.dangerInk, cursor: 'pointer' }}>Retry</button>
-                              </div>
-                            )}
-                          </div>
-                          {imgState.url && (
-                            <button onClick={() => scene && generateSingleSceneImage(idx, scene.image_prompt)} style={{ alignSelf: 'flex-start', fontSize: 10, padding: '3px 10px', borderRadius: 6, border: `1px solid ${T.border}`, background: T.card, color: T.ink2, cursor: 'pointer' }}>Redo</button>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <button
-                      onClick={sceneImages.some(s=>s.generating) ? undefined : generateAllSceneImages}
-                      disabled={sceneImages.some(s=>s.generating)}
-                      style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'8px 16px', borderRadius:8, border:'none', background: sceneImages.some(s=>s.generating) ? T.border : '#9333EA', color: sceneImages.some(s=>s.generating) ? T.ink2 : '#fff', fontSize:12.5, fontWeight:600, cursor: sceneImages.some(s=>s.generating) ? 'default' : 'pointer', opacity: sceneImages.some(s=>s.generating) ? 0.65 : 1 }}
-                    >
-                      {sceneImages.some(s=>s.generating) ? <><motion.span animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}}>⟳</motion.span> Generating…</> : <>🎨 {allImagesReady ? 'Regenerate All' : 'Generate All Images'}</>}
-                    </button>
-                    {allImagesReady && !sceneVideos.some(v=>v.url||v.generating) && (
-                      <button onClick={generateAllSceneVideos} style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'8px 16px', borderRadius:8, border:'none', background:'#E11D48', color:'#fff', fontSize:12.5, fontWeight:600, cursor:'pointer' }}>
-                        🎬 Generate All Videos →
-                      </button>
-                    )}
-                  </div>
                 </Card>
               </motion.div>
             )}
@@ -1647,7 +1671,7 @@ export function TikTokScreen() {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <button
-                      onClick={sceneVideos.some(v=>v.generating) ? undefined : generateAllSceneVideos}
+                      onClick={sceneVideos.some((v) => v.generating) ? undefined : () => { console.log('[Pipeline] Scene Videos: regenerate all clicked'); void generateAllSceneVideos() }}
                       disabled={sceneVideos.some(v=>v.generating)}
                       style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'8px 16px', borderRadius:8, border:'none', background: sceneVideos.some(v=>v.generating) ? T.border : '#E11D48', color: sceneVideos.some(v=>v.generating) ? T.ink2 : '#fff', fontSize:12.5, fontWeight:600, cursor: sceneVideos.some(v=>v.generating) ? 'default' : 'pointer', opacity: sceneVideos.some(v=>v.generating) ? 0.65 : 1 }}
                     >
