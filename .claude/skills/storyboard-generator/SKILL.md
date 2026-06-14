@@ -10,7 +10,7 @@ This skill activates when:
 
 ## What This Skill Does
 
-Generates a 6-scene visual storyboard JSON for a TikTok video about a given product. Each scene is a complete unit of cinematic direction, specifying what the camera sees, how it moves, what voiceover is spoken, and what prompt to use for image generation.
+Generates a 6-scene visual storyboard JSON for a TikTok video about a given product. All 6 scenes share the same visual DNA (background, hand style, lighting) — only the camera angle changes per scene. This makes the final video look professionally shot on a single day, not obviously AI-generated.
 
 The storyboard forms the backbone of the entire visual pipeline — all 6 images and 6 videos are generated directly from this storyboard's data.
 
@@ -41,55 +41,68 @@ interface StoryboardInput {
 ```typescript
 interface Scene {
   sceneNumber: number      // 1–6
-  angle: string            // "Wide Shot" | "Close Up" | "Extreme Close Up" | "Top Down" | "POV" | "Medium Shot"
-  action: string           // Brief description of visual action (English, 1–2 sentences)
-  image_prompt: string     // Detailed Flux-optimised image generation prompt (English, 50–80 words)
-  voiceover_text: string   // BM narration for this scene (1–2 sentences)
+  angle: string            // Fixed per scene — see Scene Structure below
+  action: string           // Claude-generated: brief English description of visual action
+  image_prompt: string     // Server-built: fixed angle prefix + BASE_DNA (Claude cannot override)
+  voiceover_text: string   // Claude-generated: BM narration for this scene (1–2 sentences)
 }
 
 // Full output: Scene[] with exactly 6 elements
 ```
 
-## Scene Structure Template
+## Visual DNA (BASE_DNA)
 
-The 6 scenes must follow this narrative arc:
+Every `image_prompt` ends with this verbatim string. Never modify it:
 
-| Scene | Purpose | Angle | Content |
-|-------|---------|-------|---------|
-| 1 | Establish problem or hook | Wide Shot or POV | Viewer sees relatable pain point |
-| 2 | Product reveal | Close Up | Hero shot of the product |
-| 3 | How it works | POV or Medium Shot | Application or usage demonstration |
-| 4 | In use / experience | Medium Shot | Lifestyle scene, relaxed usage |
-| 5 | Results | Extreme Close Up | Before-after, transformation result |
-| 6 | CTA | Top Down | Flat lay / product + pricing + action |
+```
+aesthetic product photography, feminine hand wearing cream knit oversized sleeve,
+soft natural window light from left side, white linen cloth background,
+ASMR close-up macro style, minimal clean desk setup, consistent warm neutral tone,
+shot on iPhone vertical, no text no watermark, ultra realistic, 8k
+```
+
+This ensures the hand, background, and lighting are identical across all 6 scenes.
+
+## Scene Structure (Fixed — Do Not Change Angles)
+
+| Scene | Angle | Image prompt prefix | Script arc |
+|-------|-------|---------------------|------------|
+| 1 | Top Down | overhead flat lay, product on white linen, hand reaches in from bottom | Hook |
+| 2 | Close Up | hand holds product upright facing camera, fingers wrapped naturally | Hook reinforce |
+| 3 | Medium Shot | hand rotates product to side profile, 45°, label visible | Body |
+| 4 | Extreme Close Up | macro fingertip on main product feature/button | Body demo |
+| 5 | POV | product beside small plant or ceramic coffee cup, hand lightly touches | Proof / lifestyle |
+| 6 | Wide Shot | product beside/inside packaging box, hand lifts product out | CTA / unboxing |
+
+**The image prompts are built server-side** by concatenating the angle prefix + product name + BASE_DNA. Claude only generates `action` and `voiceover_text` — it cannot override the visual DNA.
+
+## Architecture: Server vs Claude Responsibility
+
+```
+Server builds → image_prompt = "{anglePrefix}, {productName}, {BASE_DNA}"
+Claude builds → action (English), voiceover_text (Bahasa Malaysia)
+Server merges → complete Scene[] array
+```
+
+This split is intentional. Giving Claude control over `image_prompt` resulted in random backgrounds, lighting, and hand styles across scenes — breaking visual consistency.
 
 ## Prompt Instructions (sent to Claude Haiku)
 
+Claude is told the 6 scene angles are fixed and is asked **only** for action descriptions and BM voiceover text — no image prompts:
+
 ```
-You are a creative director for TikTok content. Generate a storyboard with exactly 6 scenes for a TikTok video.
-
-Product: {productName} ({price})
-Script:
-- Hook: {hook}
-- Body: {bodyText}  
-- CTA: {cta}
-
-Return ONLY a valid JSON array with exactly 6 scene objects. No markdown, no explanation, just the JSON array.
-
-Each scene object must have exactly these fields:
-- "sceneNumber": integer 1 through 6
-- "angle": exactly one of: "Wide Shot", "Close Up", "Extreme Close Up", "Top Down", "POV", "Medium Shot"
-- "action": brief description of the visual action in this scene (English, 1-2 sentences)
-- "image_prompt": detailed visual description optimized for Flux image generation (English, 2-3 sentences, very descriptive with lighting, style, composition)
-- "voiceover_text": narration for this scene in Bahasa Malaysia (1-2 sentences, conversational)
-
-Scenes 1-2 cover the hook, scenes 3-4 cover the body, scenes 5-6 cover the CTA.
+Generate scene descriptions for a 6-scene TikTok video about {productName} ({price}).
+[script provided]
+Return ONLY a JSON array with exactly 6 objects, each with:
+- "action": 1-2 sentence English description of camera/subject movement
+- "voiceover_text": 1-2 sentence BM narration (conversational, BM slang)
+No other fields. No image_prompt. No markdown.
 ```
 
 ## Fallback Behaviour
 
 If the API call fails (Claude API down, ANTHROPIC_API_KEY missing, JSON parse failure):
-1. Load `DEMO_STORYBOARD` from `tiktok-screen.tsx` (hardcoded AeroGlow LED Face Mask storyboard)
+1. Load `DEMO_STORYBOARD` from `tiktok-screen.tsx` (hardcoded AeroGlow LED Face Mask — all 6 scenes use BASE_DNA)
 2. Show warning to user: "Storyboard API gagal — menggunakan storyboard demo"
 3. Continue pipeline normally — user can still generate images/videos from demo storyboard
 4. Log error to console for debugging
@@ -103,9 +116,9 @@ If the API call fails (Claude API down, ANTHROPIC_API_KEY missing, JSON parse fa
 ## Quality Standards
 
 A valid storyboard must:
-- [ ] Have exactly 6 scenes (pad with demo data if fewer returned)
-- [ ] Each scene has all 5 required fields
-- [ ] `angle` is one of the 6 allowed values (not a custom string)
-- [ ] `image_prompt` is in English and detailed enough for Flux (>30 words)
-- [ ] `voiceover_text` is in Bahasa Malaysia
-- [ ] Scenes flow as a coherent narrative (problem → product → results → CTA)
+- [ ] Have exactly 6 scenes in the fixed angle order (Top Down → Close Up → Medium → Extreme Close Up → POV → Wide Shot)
+- [ ] Every `image_prompt` contains the full BASE_DNA suffix verbatim
+- [ ] `image_prompt` is built server-side — never from Claude output
+- [ ] `angle` matches the fixed per-scene value, not a random pick
+- [ ] `voiceover_text` is in Bahasa Malaysia with BM slang
+- [ ] Scenes flow as a coherent narrative (hook → body → proof → CTA)
