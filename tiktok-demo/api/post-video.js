@@ -17,7 +17,7 @@ function setCors(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 }
 
-async function initDirectPost(accessToken, videoUrl, caption) {
+async function initDirectPost(accessToken, videoUrl, postInfo) {
   const initRes = await fetch('https://open.tiktokapis.com/v2/post/publish/video/init/', {
     method: 'POST',
     headers: {
@@ -25,13 +25,7 @@ async function initDirectPost(accessToken, videoUrl, caption) {
       'Content-Type': 'application/json; charset=UTF-8',
     },
     body: JSON.stringify({
-      post_info: {
-        title: caption || 'Posted via ContentBoss Studio',
-        privacy_level: 'SELF_ONLY', // sandbox-safe default — change to PUBLIC_TO_EVERYONE after app approval
-        disable_duet: false,
-        disable_comment: false,
-        disable_stitch: false,
-      },
+      post_info: postInfo,
       source_info: {
         source: 'PULL_FROM_URL',
         video_url: videoUrl,
@@ -95,7 +89,17 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'init') {
-      const { video_url: videoUrl, caption } = req.body
+      const {
+        video_url: videoUrl,
+        title,
+        privacy_level: privacyLevel,
+        disable_comment: disableComment,
+        disable_duet: disableDuet,
+        disable_stitch: disableStitch,
+        brand_content_toggle: brandContentToggle,
+        brand_organic_toggle: brandOrganicToggle,
+      } = req.body
+
       if (!videoUrl) {
         return res.status(400).json({ error: 'Missing required field: video_url' })
       }
@@ -109,7 +113,27 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'video_url must be HTTPS — TikTok only pulls from secure URLs' })
       }
 
-      const publishId = await initDirectPost(accessToken, videoUrl, caption)
+      // Privacy level is mandatory — the user must explicitly choose one (no default).
+      if (!privacyLevel) {
+        return res.status(400).json({ error: 'privacy_level is required — the user must select a privacy status' })
+      }
+
+      // TikTok forbids Branded Content with a private (SELF_ONLY) audience.
+      if (brandContentToggle && privacyLevel === 'SELF_ONLY') {
+        return res.status(400).json({ error: 'Branded Content cannot be posted with SELF_ONLY privacy — choose a public audience' })
+      }
+
+      const postInfo = {
+        title: title || 'Posted via ContentBoss Studio',
+        privacy_level: privacyLevel,
+        disable_comment: !!disableComment,
+        disable_duet: !!disableDuet,
+        disable_stitch: !!disableStitch,
+        brand_content_toggle: !!brandContentToggle,
+        brand_organic_toggle: !!brandOrganicToggle,
+      }
+
+      const publishId = await initDirectPost(accessToken, videoUrl, postInfo)
       return res.status(200).json({ publish_id: publishId })
     }
 

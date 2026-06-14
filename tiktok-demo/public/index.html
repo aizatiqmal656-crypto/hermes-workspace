@@ -216,7 +216,103 @@
       transition: border-color 0.15s;
     }
 
-    input:focus { border-color: var(--border); }
+    input:focus, select:focus { border-color: var(--border); }
+
+    select {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+      cursor: pointer;
+    }
+
+    select:invalid { color: var(--muted); }
+
+    .req { color: var(--red); }
+
+    /* Creator info chip (mirrors the user chip) */
+    .creator-chip {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 6px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+    .creator-chip.show { display: flex; }
+    .creator-chip img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--accent); background: var(--surface); }
+    .creator-chip .name { font-weight: 700; font-size: 14px; color: var(--text); }
+    .creator-chip .tag { font-size: 12px; color: var(--muted); }
+
+    /* Toggle / disclosure groups */
+    .toggle-group {
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 14px;
+    }
+    .toggle-group > legend,
+    .toggle-group > .group-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.3px;
+      padding: 0 6px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13px;
+      color: var(--text);
+      margin: 8px 0 0;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .checkbox-row input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .checkbox-row.disabled { color: var(--muted); cursor: not-allowed; opacity: 0.55; }
+    .checkbox-row.disabled input { cursor: not-allowed; }
+
+    .hint { font-size: 11px; color: var(--muted); margin: 2px 0 0 25px; line-height: 1.45; }
+
+    .commercial-options {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-soft);
+    }
+
+    .compliance-label {
+      display: none;
+      font-size: 12px;
+      margin-top: 12px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      border: 1px solid var(--border);
+      color: var(--accent-dim);
+    }
+    .compliance-label.show { display: block; }
+
+    .consent {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 18px 0 14px;
+      line-height: 1.5;
+    }
 
     .progress-steps { display: none; gap: 0; margin-top: 16px; flex-direction: column; }
     .progress-steps.show { display: flex; }
@@ -313,8 +409,6 @@
         </div>
         <label for="video-url">Video URL (publicly accessible MP4, 9:16)</label>
         <input type="url" id="video-url" placeholder="https://aizatiqmal656-crypto.github.io/hermes-workspace/sample-video.mp4" />
-        <label for="video-caption">Caption</label>
-        <input type="text" id="video-caption" maxlength="150" value="Generated with ContentBoss Studio ✨ #AI #ContentCreation" />
       </div>
     </section>
 
@@ -327,6 +421,55 @@
       </div>
       <div class="step-body">
         <p>Publishes the video directly to the connected TikTok account using the Content Posting API direct post endpoint (sandbox mode — visible only to the test account).</p>
+
+        <!-- Creator info (fetched from creator_info/query before posting) -->
+        <div class="creator-chip" id="creator-chip">
+          <img id="creator-avatar" src="" alt="Creator avatar" />
+          <div>
+            <div class="name" id="creator-nickname">—</div>
+            <div class="tag">Posting to this creator account</div>
+          </div>
+        </div>
+        <div class="status-line" id="creator-status"></div>
+
+        <!-- Title -->
+        <label for="post-title">Title</label>
+        <input type="text" id="post-title" maxlength="2200" value="Generated with ContentBoss Studio ✨ #AI #ContentCreation" />
+
+        <!-- Privacy status — MANDATORY, no default -->
+        <label for="privacy-level">Who can view this video <span class="req">*</span></label>
+        <select id="privacy-level" required>
+          <option value="" selected disabled>Select privacy status…</option>
+        </select>
+
+        <!-- Interaction toggles — all unchecked by default -->
+        <fieldset class="toggle-group">
+          <legend>Allow users to</legend>
+          <label class="checkbox-row" id="row-comment"><input type="checkbox" id="allow-comment" /> Comment</label>
+          <label class="checkbox-row" id="row-duet"><input type="checkbox" id="allow-duet" /> Duet</label>
+          <label class="checkbox-row" id="row-stitch"><input type="checkbox" id="allow-stitch" /> Stitch</label>
+        </fieldset>
+
+        <!-- Commercial content disclosure — OFF by default -->
+        <fieldset class="toggle-group">
+          <span class="group-label">Disclosure</span>
+          <label class="checkbox-row"><input type="checkbox" id="commercial-toggle" /> Disclose video content</label>
+          <p class="hint">Turn on if this video promotes a brand, product, or service. Your video may be reviewed for compliance.</p>
+          <div class="commercial-options" id="commercial-options" style="display:none">
+            <label class="checkbox-row"><input type="checkbox" id="brand-organic" /> Your Brand</label>
+            <p class="hint">You are promoting yourself or your own business.</p>
+            <label class="checkbox-row"><input type="checkbox" id="brand-content" /> Branded Content</label>
+            <p class="hint">You are promoting another brand or a third party (paid partnership). Cannot be set to private.</p>
+            <p class="compliance-label" id="compliance-label"></p>
+          </div>
+        </fieldset>
+
+        <!-- Consent declaration — required above Post button -->
+        <p class="consent" id="consent-text">
+          By posting, you agree to TikTok's
+          <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noopener">Music Usage Confirmation</a>.
+        </p>
+
         <button class="btn btn-primary" id="post-btn" disabled>📤 Post to TikTok (Sandbox)</button>
         <div class="progress-steps" id="post-progress">
           <div class="p-step" id="p-init"><span class="dot"></span> Initialising upload (video/init)</div>
@@ -350,7 +493,16 @@
     const REDIRECT_URI = window.location.origin + '/'
     const SCOPES = 'user.info.basic,video.upload,video.publish'
 
+    // Human-readable labels for TikTok privacy_level_options values.
+    const PRIVACY_LABELS = {
+      PUBLIC_TO_EVERYONE: 'Public — everyone',
+      MUTUAL_FOLLOW_FRIENDS: 'Friends — mutual follows',
+      FOLLOWER_OF_CREATOR: 'Followers',
+      SELF_ONLY: 'Private — only me',
+    }
+
     let accessToken = null
+    let creatorInfo = null
 
     const $ = (id) => document.getElementById(id)
 
@@ -458,11 +610,124 @@
 
         markStepDone(1)
         markStepDone(2)
-        $('post-btn').disabled = false
+        await loadCreatorInfo()
       } catch (err) {
         setStatus(statusEl, 'err', '⚠ ' + (err instanceof Error ? err.message : 'Authentication failed'))
       }
     }
+
+    // ── Step 3: Creator info + compliance UX ──
+
+    async function loadCreatorInfo() {
+      const statusEl = $('creator-status')
+      try {
+        setStatus(statusEl, 'info', 'Fetching creator info from TikTok…', true)
+        const res = await fetch('/api/creator-info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access_token: accessToken }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Creator info fetch failed')
+        creatorInfo = data
+
+        // Creator nickname + avatar
+        $('creator-nickname').textContent = data.creator_nickname || data.creator_username || 'TikTok creator'
+        if (data.creator_avatar_url) $('creator-avatar').src = data.creator_avatar_url
+        $('creator-chip').classList.add('show')
+
+        populatePrivacyOptions(data.privacy_level_options)
+        applyInteractionAvailability(data)
+        clearStatus(statusEl)
+      } catch (err) {
+        setStatus(statusEl, 'err', '⚠ ' + (err instanceof Error ? err.message : 'Creator info failed'))
+      }
+    }
+
+    function populatePrivacyOptions(options) {
+      const select = $('privacy-level')
+      // Keep the disabled placeholder, drop anything previously added.
+      select.querySelectorAll('option:not([value=""])').forEach((o) => o.remove())
+      const list = Array.isArray(options) && options.length ? options : ['SELF_ONLY']
+      list.forEach((value) => {
+        const opt = document.createElement('option')
+        opt.value = value
+        opt.textContent = PRIVACY_LABELS[value] || value
+        select.appendChild(opt)
+      })
+    }
+
+    function applyInteractionAvailability(info) {
+      // Grey out and force-uncheck any interaction TikTok reports as disabled.
+      const map = [
+        ['allow-comment', 'row-comment', info.comment_disabled],
+        ['allow-duet', 'row-duet', info.duet_disabled],
+        ['allow-stitch', 'row-stitch', info.stitch_disabled],
+      ]
+      map.forEach(([inputId, rowId, disabled]) => {
+        const input = $(inputId)
+        const row = $(rowId)
+        input.checked = false
+        input.disabled = !!disabled
+        row.classList.toggle('disabled', !!disabled)
+      })
+    }
+
+    // Branded Content forbids a private audience — disable SELF_ONLY when it's on.
+    function syncBrandedContentConstraint() {
+      const brandedOn = $('brand-content').checked
+      const select = $('privacy-level')
+      const selfOnly = select.querySelector('option[value="SELF_ONLY"]')
+      if (selfOnly) {
+        selfOnly.disabled = brandedOn
+        if (brandedOn && select.value === 'SELF_ONLY') select.value = ''
+      }
+    }
+
+    function updateComplianceLabel() {
+      const label = $('compliance-label')
+      const organic = $('brand-organic').checked
+      const branded = $('brand-content').checked
+      let text = ''
+      if (branded && organic) text = 'Your video will be labeled "Paid partnership".'
+      else if (branded) text = 'Your video will be labeled "Paid partnership".'
+      else if (organic) text = 'Your video will be labeled "Promotional content".'
+      label.textContent = text
+      label.classList.toggle('show', !!text)
+    }
+
+    // Post button enabled only when: privacy selected AND
+    // (commercial off OR at least one brand option checked).
+    function validatePostButton() {
+      const privacyChosen = !!$('privacy-level').value
+      const commercialOn = $('commercial-toggle').checked
+      const brandChosen = $('brand-organic').checked || $('brand-content').checked
+      const brandedValid = !($('brand-content').checked && $('privacy-level').value === 'SELF_ONLY')
+      const ok = privacyChosen && (!commercialOn || brandChosen) && brandedValid
+      $('post-btn').disabled = !ok
+    }
+
+    $('privacy-level').addEventListener('change', validatePostButton)
+
+    $('commercial-toggle').addEventListener('change', () => {
+      const on = $('commercial-toggle').checked
+      $('commercial-options').style.display = on ? 'block' : 'none'
+      if (!on) {
+        $('brand-organic').checked = false
+        $('brand-content').checked = false
+        syncBrandedContentConstraint()
+        updateComplianceLabel()
+      }
+      validatePostButton()
+    })
+
+    ;['brand-organic', 'brand-content'].forEach((id) => {
+      $(id).addEventListener('change', () => {
+        syncBrandedContentConstraint()
+        updateComplianceLabel()
+        validatePostButton()
+      })
+    })
 
     // ── Step 3: Post video ──
 
@@ -482,12 +747,31 @@
       const statusEl = $('step3-status')
       const btn = $('post-btn')
       const videoUrl = $('video-url').value.trim() || 'https://aizatiqmal656-crypto.github.io/hermes-workspace/sample-video.mp4'
-      const caption = $('video-caption').value.trim() || 'Posted via ContentBoss Studio'
+      const title = $('post-title').value.trim() || 'Posted via ContentBoss Studio'
+      const privacyLevel = $('privacy-level').value
 
       if (!accessToken) {
         setStatus(statusEl, 'err', '⚠ Not connected — complete Step 1 first')
         return
       }
+      // Privacy status is mandatory — guard even though the button is gated on it.
+      if (!privacyLevel) {
+        setStatus(statusEl, 'err', '⚠ Please select a privacy status before posting')
+        return
+      }
+
+      const commercialOn = $('commercial-toggle').checked
+      const brandOrganic = commercialOn && $('brand-organic').checked
+      const brandContent = commercialOn && $('brand-content').checked
+      if (commercialOn && !brandOrganic && !brandContent) {
+        setStatus(statusEl, 'err', '⚠ Select "Your Brand" or "Branded Content" to disclose commercial content')
+        return
+      }
+
+      // UI toggles are "Allow X" (checked = allowed); the API expects disable_X.
+      const disableComment = !$('allow-comment').checked
+      const disableDuet = !$('allow-duet').checked
+      const disableStitch = !$('allow-stitch').checked
 
       btn.disabled = true
       $('post-progress').classList.add('show')
@@ -499,7 +783,18 @@
         const initRes = await fetch('/api/post-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'init', access_token: accessToken, video_url: videoUrl, caption }),
+          body: JSON.stringify({
+            action: 'init',
+            access_token: accessToken,
+            video_url: videoUrl,
+            title,
+            privacy_level: privacyLevel,
+            disable_comment: disableComment,
+            disable_duet: disableDuet,
+            disable_stitch: disableStitch,
+            brand_organic_toggle: brandOrganic,
+            brand_content_toggle: brandContent,
+          }),
         })
         const initData = await initRes.json()
         if (!initRes.ok || !initData.publish_id) {
@@ -534,7 +829,7 @@
         throw new Error('Timed out waiting for TikTok to finish processing (2 min)')
       } catch (err) {
         setStatus(statusEl, 'err', '⚠ ' + (err instanceof Error ? err.message : 'Post failed'))
-        btn.disabled = false
+        validatePostButton()
       }
     })
 
