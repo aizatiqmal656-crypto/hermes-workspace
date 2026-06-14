@@ -1601,26 +1601,22 @@ export function TikTokScreen() {
                             ? <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>⟳</motion.span> Generating images…</>
                             : <>🎨 {allImagesReady ? 'Regenerate All Images' : 'Generate All Images →'}</>}
                         </button>
-                        {allImagesReady && !sceneVideos.some((v) => v.generating) && (
+                        {allImagesReady && (
                           <button
-                            onClick={() => {
+                            onClick={sceneVideos.some((v) => v.generating) ? undefined : () => {
                               console.log('[Pipeline] Generate All Videos clicked', {
                                 storyboardLen: storyboard?.length,
                                 imagesReady: sceneImages.filter((s) => s.url).length,
-                                sceneUrls: sceneImages.map((s, i) => `S${i + 1}:${s.url ? 'ok' : 'missing'}`),
                               })
                               void generateAllSceneVideos()
                             }}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 16px', borderRadius: 8, border: 'none', background: '#E11D48', color: '#fff', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}
+                            disabled={sceneVideos.some((v) => v.generating)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 16px', borderRadius: 8, border: 'none', background: sceneVideos.some((v) => v.generating) ? T.border : '#E11D48', color: sceneVideos.some((v) => v.generating) ? T.ink2 : '#fff', fontSize: 12.5, fontWeight: 600, cursor: sceneVideos.some((v) => v.generating) ? 'default' : 'pointer', opacity: sceneVideos.some((v) => v.generating) ? 0.65 : 1 }}
                           >
-                            🎬 {videosReady > 0 ? 'Regenerate All Videos' : 'Generate All Videos →'}
+                            {sceneVideos.some((v) => v.generating)
+                              ? <><motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>⟳</motion.span> {`Generating… (${videosReady}/6 done)`}</>
+                              : <>🎬 {videosReady > 0 ? 'Regenerate All Videos' : 'Generate All Videos →'}</>}
                           </button>
-                        )}
-                        {sceneVideos.some((v) => v.generating) && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#E11D48', fontWeight: 600 }}>
-                            <motion.span style={{ width: 7, height: 7, borderRadius: '50%', background: '#E11D48', display: 'inline-block' }} animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 0.9, repeat: Infinity }} />
-                            Generating videos… ({videosReady}/6 done)
-                          </span>
                         )}
                       </div>
                     </>
@@ -1657,12 +1653,12 @@ export function TikTokScreen() {
                             {vidState.error && !vidState.url && (
                               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 8 }}>
                                 <span style={{ fontSize: 9.5, textAlign: 'center', color: T.dangerInk }}>{vidState.error}</span>
-                                {imgUrl && scene && <button onClick={() => generateSingleSceneVideo(idx, imgUrl, scene.action)} style={{ fontSize: 10, padding: '3px 10px', borderRadius: 6, background: T.dangerSoft, border: `1px solid ${T.dangerLine}`, color: T.dangerInk, cursor: 'pointer' }}>Retry</button>}
+                                {imgUrl && scene && <button onClick={() => void generateSingleSceneVideo(idx, imgUrl, scene.action)} style={{ fontSize: 10, padding: '3px 10px', borderRadius: 6, background: T.dangerSoft, border: `1px solid ${T.dangerLine}`, color: T.dangerInk, cursor: 'pointer' }}>Retry</button>}
                               </div>
                             )}
                           </div>
                           {vidState.url && imgUrl && scene && (
-                            <button onClick={() => generateSingleSceneVideo(idx, imgUrl, scene.action)} style={{ alignSelf: 'flex-start', fontSize: 10, padding: '3px 10px', borderRadius: 6, border: `1px solid ${T.border}`, background: T.card, color: T.ink2, cursor: 'pointer' }}>Redo</button>
+                            <button onClick={() => void generateSingleSceneVideo(idx, imgUrl, scene.action)} style={{ alignSelf: 'flex-start', fontSize: 10, padding: '3px 10px', borderRadius: 6, border: `1px solid ${T.border}`, background: T.card, color: T.ink2, cursor: 'pointer' }}>Redo</button>
                           )}
                         </div>
                       )
