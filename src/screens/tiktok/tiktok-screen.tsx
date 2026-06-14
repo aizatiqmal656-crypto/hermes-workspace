@@ -1190,7 +1190,7 @@ export function TikTokScreen() {
       // Step 1 — Generate 6 separate audio segments (one per scene VO text)
       const audioSegments: Uint8Array[] = []
       for (let i = 0; i < 6; i++) {
-        setCompileProgress(`Generating voice ${i + 1}/6…`)
+        setCompileProgress(`🎙️ Generating voiceovers... (${i + 1}/6)`)
         const text = storyboard[i]?.voiceover_text ?? ''
         const t0 = performance.now()
         const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB', {
@@ -1220,7 +1220,7 @@ export function TikTokScreen() {
 
       // Step 2 — Per-scene: merge video clip + audio segment
       for (let i = 0; i < 6; i++) {
-        setCompileProgress(`Merging scene ${i + 1}/6 (video + voice)…`)
+        setCompileProgress(`🎬 Merging videos... (${i + 1}/6)`)
         await ff.writeFile(`raw${i}.mp4`, await fetchFile(videoUrls[i]))
         await ff.writeFile(`voice${i}.mp3`, audioSegments[i])
         await ff.exec([
@@ -1239,7 +1239,7 @@ export function TikTokScreen() {
       }
 
       // Step 3 — Concat all 6 compiled scene clips into final.mp4
-      setCompileProgress('Joining 6 scenes into final.mp4…')
+      setCompileProgress('🎬 Joining all 6 scenes...')
       let concatContent = ''
       for (let i = 0; i < 6; i++) concatContent += `file 'scene${i}.mp4'\n`
       await ff.writeFile('concat.txt', new TextEncoder().encode(concatContent))
@@ -1247,7 +1247,7 @@ export function TikTokScreen() {
 
       const data = await ff.readFile('final.mp4')
       setCompiledVideoUrl(URL.createObjectURL(new Blob([data as Uint8Array<ArrayBuffer>], { type: 'video/mp4' })))
-      setCompileProgress('')
+      setCompileProgress('✅ Compile complete!')
       console.log('[Cost] Compile complete: 6× ElevenLabs voice + 6× ffmpeg merge + 1× concat')
 
       for (let i = 0; i < 6; i++) await ff.deleteFile(`scene${i}.mp4`).catch(() => {})
@@ -1811,7 +1811,7 @@ export function TikTokScreen() {
                         style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'8px 18px', borderRadius:8, border:'none', background: compiling ? T.border : '#E11D48', color: compiling ? T.ink2 : '#fff', fontSize:12.5, fontWeight:600, cursor: compiling ? 'default' : 'pointer', opacity: compiling ? 0.65 : 1, boxShadow: compiling ? 'none' : '0 1px 3px rgba(225,29,72,0.35)' }}
                       >
                         {compiling
-                          ? <><motion.span animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}}>⟳</motion.span> {compileProgress || 'Compiling…'}</>
+                          ? <><motion.span animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}}>⟳</motion.span> Compiling... please wait</>
                           : <>🎬 {compiledVideoUrl ? 'Re-compile Final Video' : 'Compile Final Video'}</>}
                       </button>
                     )}
