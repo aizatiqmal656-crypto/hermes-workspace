@@ -458,6 +458,12 @@ export function TikTokScreen() {
   const [mergeError, setMergeError] = useState<string | null>(null)
   const ffmpegRef = useRef<FFmpeg | null>(null)
 
+  // ── Compile Final Video (VO split → per-scene audio-merge → final concat) ──
+  const [compiling, setCompiling] = useState(false)
+  const [compileProgress, setCompileProgress] = useState('')
+  const [compileError, setCompileError] = useState<string | null>(null)
+  const [compiledVideoUrl, setCompiledVideoUrl] = useState<string | null>(null)
+
   // ── Immutable state helpers ──
   const updateSceneImage = useCallback((idx: number, update: Partial<SceneImageState>) => {
     setSceneImages((prev) => prev.map((s, i) => (i === idx ? { ...s, ...update } : s)))
@@ -1136,6 +1142,125 @@ export function TikTokScreen() {
     }
   }, [mergedClipsUrl, mergedVideoUrl, logRunToMemory])
 
+  // -------------------------------------------------------------------------
+  // Compile Final Video: split VO into 6 segments → per-scene audio merge → concat
+  // -------------------------------------------------------------------------
+
+  const compileFinalVideo = useCallback(async () => {
+    const elevenKey = import.meta.env.VITE_ELEVENLABS_API_KEY as string | undefined
+    if (!elevenKey) {
+      setCompileError('VITE_ELEVENLABS_API_KEY not set — add your ElevenLabs API key to .env')
+      return
+    }
+    if (!storyboard) {
+      setCompileError('No storyboard — generate storyboard first')
+      return
+    }
+    const videoUrls = sceneVideos.map((v) => v.url).filter((u): u is string => u !== null)
+    if (videoUrls.length < 6) {
+      setCompileError(`Only ${videoUrls.length}/6 scene videos ready — generate all videos first`)
+      return
+    }
+
+    setCompiling(true)
+    setCompileError(null)
+    if (compiledVideoUrl) URL.revokeObjectURL(compiledVideoUrl)
+    setCompiledVideoUrl(null)
+    setCompileProgress('Loading ffmpeg.wasm…')
+
+    try {
+      const { FFmpeg } = await import('@ffmpeg/ffmpeg')
+      const { fetchFile, toBlobURL } = await import('@ffmpeg/util')
+
+      if (!ffmpegRef.current) {
+        const ff = new FFmpeg()
+        ff.on('log', ({ message }) => {
+          if (/time=|frame=/.test(message)) setCompileProgress(`Encoding… ${message.replace(/\s+/g, ' ').trim()}`)
+        })
+        setCompileProgress('Downloading ffmpeg core (~30 MB, first time only)…')
+        const BASE = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm'
+        await ff.load({
+          coreURL: await toBlobURL(`${BASE}/ffmpeg-core.js`, 'text/javascript'),
+          wasmURL: await toBlobURL(`${BASE}/ffmpeg-core.wasm`, 'application/wasm'),
+        })
+        ffmpegRef.current = ff
+      }
+      const ff = ffmpegRef.current
+
+      // Step 1 — Generate 6 separate audio segments (one per scene VO text)
+      const audioSegments: Uint8Array[] = []
+      for (let i = 0; i < 6; i++) {
+        setCompileProgress(`Generating voice ${i + 1}/6…`)
+        const text = storyboard[i]?.voiceover_text ?? ''
+        const t0 = performance.now()
+        const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB', {
+          method: 'POST',
+          headers: {
+            'xi-api-key': elevenKey,
+            'Content-Type': 'application/json',
+            Accept: 'audio/mpeg',
+          },
+          body: JSON.stringify({
+            text,
+            model_id: 'eleven_turbo_v2_5',
+            voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.3, use_speaker_boost: true },
+          }),
+        })
+        if (!res.ok) {
+          const err = (await res.json().catch(() => ({}))) as Record<string, unknown>
+          throw new Error(
+            typeof err.detail === 'string' ? err.detail :
+            typeof err.message === 'string' ? err.message :
+            `ElevenLabs HTTP ${res.status}`,
+          )
+        }
+        audioSegments.push(new Uint8Array(await res.arrayBuffer()))
+        console.log(`[Cost] ElevenLabs voice scene ${i + 1}/6: ${Math.round(performance.now() - t0)}ms, ${text.length} chars`)
+      }
+
+      // Step 2 — Per-scene: merge video clip + audio segment
+      for (let i = 0; i < 6; i++) {
+        setCompileProgress(`Merging scene ${i + 1}/6 (video + voice)…`)
+        await ff.writeFile(`raw${i}.mp4`, await fetchFile(videoUrls[i]))
+        await ff.writeFile(`voice${i}.mp3`, audioSegments[i])
+        await ff.exec([
+          '-i', `raw${i}.mp4`,
+          '-i', `voice${i}.mp3`,
+          '-c:v', 'copy',
+          '-c:a', 'aac',
+          '-b:a', '192k',
+          '-map', '0:v:0',
+          '-map', '1:a:0',
+          '-shortest',
+          `scene${i}.mp4`,
+        ])
+        await ff.deleteFile(`raw${i}.mp4`).catch(() => {})
+        await ff.deleteFile(`voice${i}.mp3`).catch(() => {})
+      }
+
+      // Step 3 — Concat all 6 compiled scene clips into final.mp4
+      setCompileProgress('Joining 6 scenes into final.mp4…')
+      let concatContent = ''
+      for (let i = 0; i < 6; i++) concatContent += `file 'scene${i}.mp4'\n`
+      await ff.writeFile('concat.txt', new TextEncoder().encode(concatContent))
+      await ff.exec(['-f', 'concat', '-safe', '0', '-i', 'concat.txt', '-c', 'copy', 'final.mp4'])
+
+      const data = await ff.readFile('final.mp4')
+      setCompiledVideoUrl(URL.createObjectURL(new Blob([data as Uint8Array<ArrayBuffer>], { type: 'video/mp4' })))
+      setCompileProgress('')
+      console.log('[Cost] Compile complete: 6× ElevenLabs voice + 6× ffmpeg merge + 1× concat')
+
+      for (let i = 0; i < 6; i++) await ff.deleteFile(`scene${i}.mp4`).catch(() => {})
+      await ff.deleteFile('concat.txt').catch(() => {})
+      await ff.deleteFile('final.mp4').catch(() => {})
+    } catch (err) {
+      setCompileError(err instanceof Error ? err.message : 'Compile failed')
+      setCompileProgress('')
+    } finally {
+      setCompiling(false)
+    }
+  }, [storyboard, sceneVideos, compiledVideoUrl])
+
   // ── Derived counts ──
   const imagesReady = sceneImages.filter((s) => s.url !== null).length
   const videosReady = sceneVideos.filter((s) => s.url !== null).length
@@ -1153,13 +1278,14 @@ export function TikTokScreen() {
     { label: 'Storyboard',            state: storyboard ? 'done' : storyboardGenerating ? 'current' : 'pending' },
     { label: `Images (${imagesReady}/6)`, state: allImagesReady ? 'done' : sceneImages.some((s) => s.generating) ? 'current' : 'pending' },
     { label: `Videos (${videosReady}/6)`, state: allVideosReady ? 'done' : sceneVideos.some((s) => s.generating) ? 'current' : 'pending' },
+    { label: 'Compile',               state: compiledVideoUrl ? 'done' : compiling ? 'current' : 'pending' },
     { label: 'Merge',                 state: mergedClipsUrl ? 'done' : mergingClips ? 'current' : 'pending' },
     { label: 'Voice',                 state: voiceUrl ? 'done' : voiceGenerating ? 'current' : 'pending' },
     { label: 'Done',                  state: mergedVideoUrl ? 'done' : merging ? 'current' : 'pending' },
   ]
 
   const pipelineOverallStatus: 'idle' | 'running' | 'done' | 'error' =
-    mergedVideoUrl ? 'done' : isRunning || storyboardGenerating || sceneImages.some(s=>s.generating) || sceneVideos.some(v=>v.generating) || mergingClips || voiceGenerating || merging ? 'running' : 'idle'
+    mergedVideoUrl || compiledVideoUrl ? 'done' : isRunning || storyboardGenerating || sceneImages.some(s=>s.generating) || sceneVideos.some(v=>v.generating) || compiling || mergingClips || voiceGenerating || merging ? 'running' : 'idle'
 
   return (
     <div
@@ -1678,7 +1804,68 @@ export function TikTokScreen() {
                         ⚡ Merge All Clips →
                       </button>
                     )}
+                    {allVideosReady && (
+                      <button
+                        onClick={compiling ? undefined : () => void compileFinalVideo()}
+                        disabled={compiling}
+                        style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'8px 18px', borderRadius:8, border:'none', background: compiling ? T.border : '#E11D48', color: compiling ? T.ink2 : '#fff', fontSize:12.5, fontWeight:600, cursor: compiling ? 'default' : 'pointer', opacity: compiling ? 0.65 : 1, boxShadow: compiling ? 'none' : '0 1px 3px rgba(225,29,72,0.35)' }}
+                      >
+                        {compiling
+                          ? <><motion.span animate={{rotate:360}} transition={{duration:1,repeat:Infinity,ease:'linear'}}>⟳</motion.span> {compileProgress || 'Compiling…'}</>
+                          : <>🎬 {compiledVideoUrl ? 'Re-compile Final Video' : 'Compile Final Video'}</>}
+                      </button>
+                    )}
                   </div>
+                </Card>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Compile Final Video output */}
+          <AnimatePresence>
+            {(compiling || compiledVideoUrl || compileError) && (
+              <motion.div key="compile-final" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <Card>
+                  <SecHead
+                    label="Final Video"
+                    right={compiledVideoUrl ? '✓ Ready to download' : compiling ? 'Compiling…' : undefined}
+                  />
+                  {compileProgress && <ProgressBar message={compileProgress} />}
+                  {compileError && <ErrorBar message={compileError} onRetry={() => void compileFinalVideo()} />}
+                  <AnimatePresence>
+                    {compiledVideoUrl && (
+                      <motion.div key="compiled-result" initial={{ opacity:0, scale:0.96 }} animate={{ opacity:1, scale:1 }} style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                        <p style={{ margin:0, fontSize:12.5, fontWeight:600, color:T.successInk }}>✓ Final TikTok video — 6 scenes with synced BM voiceover</p>
+                        <video src={compiledVideoUrl} controls autoPlay loop playsInline style={{ borderRadius:10, maxWidth:260, border:`1px solid ${T.border}`, background:'#000' }} />
+                        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                          <a
+                            href={compiledVideoUrl}
+                            download="tiktok-final.mp4"
+                            style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12.5, padding:'8px 18px', borderRadius:8, border:'none', background:T.accent, color:'#fff', textDecoration:'none', fontWeight:600, boxShadow:'0 1px 2px rgba(245,158,11,0.4)' }}
+                          >
+                            ⬇ Download Final MP4
+                          </a>
+                          <a
+                            href="https://contentboss-studio-demo.vercel.app/"
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12.5, padding:'8px 18px', borderRadius:8, border:`1px solid ${T.border}`, background:T.card, color:T.ink2, textDecoration:'none', fontWeight:600 }}
+                          >
+                            📤 Post to TikTok
+                          </a>
+                          <button
+                            onClick={() => void compileFinalVideo()}
+                            style={{ fontSize:12.5, padding:'8px 14px', borderRadius:8, border:`1px solid ${T.border}`, background:T.card, color:T.ink2, cursor:'pointer', fontWeight:500 }}
+                          >
+                            Re-compile
+                          </button>
+                        </div>
+                        <p style={{ margin:0, fontSize:11, color:T.ink3 }}>
+                          Download the MP4, then use the TikTok demo to post it — OAuth login required.
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </Card>
               </motion.div>
             )}
